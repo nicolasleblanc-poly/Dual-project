@@ -1,80 +1,35 @@
+"""
+This module is a dual function calculator. It also calculates the 
+asymmetric and symmetric constraint. 
+
+Author: Nicolas Leblanc
+"""
 module dual_asym_only
 export dual, c1
-using b_sym_and_asym, gmres, product_sym_and_asym
-# Code to get the value of the objective and of the dual.
-# The code also calculates the constraints
-# and can return the gradient.
+using b_sym_and_asym, gmres, product_sym_and_asym #, bicg_asym_only,bicgstab_asym_only,cg_asym_only
 function c1(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # Asymmetric part 
     # Left term
-    # print("In c1 \n")
     PT = T  # P*
-    # ei_tr = transpose(ei) # we have <ei^*| instead of <ei|\
-    # print("size(ei) ", size(ei), "\n")
-    # print("size(T) ", size(T), "\n")
     ei_tr = conj.(transpose(ei))
-
-    # print("l ", l, "\n")
-
-    # print("T ", T, "\n")
-
-    # print("T-T inner product ", conj.(transpose(T))*T, "\n")
-
-
     EPT=ei_tr*PT
-    I_EPT = imag(EPT) 
-    # print("I_EPT ", I_EPT, "\n")
-    
+    I_EPT = imag(EPT)     
     # Right term => asym*T
     # G|v> type calculation
-
-    # print("l ", l, "\n")
-
     asymT = asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, T)
-    # print("asymT ", asymT, "\n")
-    # output(l,T,fft_plan_x,fft_plan_y,fft_plan_z,inv_fft_plan_x,inv_fft_plan_y,inv_fft_plan_z,g_xx,g_xy,g_xz,g_yx,g_yy,g_yz,g_zx,g_zy,g_zz,cellsA)/l[1]
-    # print("asym_T", asym_T, "\n")
     TasymT = conj.(transpose(T))*asymT
-    # print("T_asym_T ", TasymT, "\n")
-
-    # print("I_EPT ", I_EPT,"\n")
-    # print("T_asym_T ", T_asym_T,"\n")
-    # print("I_EPT - T_chiGA_T",I_EPT - T_chiGA_T,"\n")
-    # return real(I_EPT - T_asym_T[1]) # for the <ei^*| case
     return real(I_EPT - TasymT)[1] 
 end
 
 function c2(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # Symmetric part 
     # Left term
-    # print("In c2 \n")
     PT = T  # P*
-    # ei_tr = transpose(ei) # we have <ei^*| instead of <ei|\
-    # print("size(ei) ", size(ei), "\n")
-    # print("size(T) ", size(T), "\n")
     ei_tr = conj.(transpose(ei))
-    # print("T ", T, "\n")
-
-    # print("T-T inner product ", conj.(transpose(T))*T, "\n")
-
     EPT=ei_tr*PT
     R_EPT = real(EPT) 
-    # print("I_EPT ", R_EPT, "\n")
-
     # Right term => asym*T
     # G|v> type calculation
-
-    # print("l ", l, "\n")
-
     symT = sym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, T)
-    # print("asymT ", asymT, "\n")
-    # output(l,T,fft_plan_x,fft_plan_y,fft_plan_z,inv_fft_plan_x,inv_fft_plan_y,inv_fft_plan_z,g_xx,g_xy,g_xz,g_yx,g_yy,g_yz,g_zx,g_zy,g_zz,cellsA)/l[1]
-    # print("asym_T", asym_T, "\n")
     TsymT = conj.(transpose(T))*symT
-    # print("T_sym_T ", TsymT, "\n")
-    
-    # print("I_EPT ", I_EPT,"\n")
-    # print("T_asym_T ", T_asym_T,"\n")
-    # print("R_EPT - T_chiGA_T",R_EPT - T_chiGA_T,"\n")
-    # return real(R_EPT - T_asym_T[1]) # for the <ei^*| case
     return real(R_EPT - TsymT)[1] 
 end
 
@@ -83,9 +38,7 @@ function dual(xi,l,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     b = bv_sym_and_asym(ei, xi, l, P) 
     print("l ", l, "\n")
     print("b ", b, "\n")
-    
-    # l = [2] # initial Lagrange multipliers
-    
+        
     # When GMRES is used as the T solver
     T = GMRES_with_restart(xi,l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
     
@@ -100,14 +53,10 @@ function dual(xi,l,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
     
 
     g = ones(Float64, 1+length(l), 1)
-    # print("C1(T)", C1(T)[1], "\n")
-    # print("C2(T)", C2(T)[1], "\n")
     g[1] = c1(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # Asym constraint
     g[2] = c2(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # Sym constraint
 
     print("g[1] ", g[1], "\n")
-    # print("ei ", ei, "\n")
-    # ei_tr = transpose(ei)
     ei_tr = conj.(transpose(ei)) 
     k0 = 2*pi
     Z = 1
@@ -132,15 +81,10 @@ function dual(xi,l,g,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,fSlist,get_gr
             kAsymk = l[1]*k_tr*Asym_k
             kSymk = l[2]*k_tr*Sym_k
             fSval += real(kAsymk[1]+kSymk[1])
-            # A_k = asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, k)
-            # k_tr = conj.(transpose(k)) 
-            # kAk=k_tr*A_k
-            # fSval += real(kAk[1])
         end
         D += fSval
     end
     print("dual", D,"\n")
-    # print("Done dual \n")
     if get_grad == true
         return real(D[1]), g, real(obj) 
     elseif get_grad == false

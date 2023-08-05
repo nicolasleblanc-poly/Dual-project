@@ -1,15 +1,18 @@
+"""
+This module is a bicg linear system solver. It could technically be used
+instead of gmres to solve for the |T> but not when using the Green 
+function because of the fact that it is an operator and not a matrix
+so we can't calculate the transpose of the Green function. 
+
+Author: Nicolas Leblanc
+"""
 module bicg_asym_only 
 export bicg
 using product, LinearAlgebra, vector
-# Based on the example code from p. 686 (or p.696 of the pdf) of the Introduction to Numerical Analysis textbook
-# Code for the AA case 
-# This is a biconjugate gradient program without a preconditioner
-# m is the maximum number of iterations
 function bicg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
     xk = zeros(ComplexF64,length(b),1)
     # Ax=0 since the initial xk is 0
     pk = rk = b 
-    # Pk = Rk = conj.(transpose(rk))
     for k in 1:length(b)
         # Step 1
         # a_k coefficient calculation 
@@ -20,13 +23,10 @@ function bicg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
         pk_A_pk = conj.(transpose(pk))*A_pk
         # Division
         a_k = rkrk/pk_A_pk
-
         # x_{k+1} calculation 
         xk = xk + a_k.*pk
-
         # r_{k+1} calculation 
         rk = rk - a_k.*A_pk
-
         # R_{k+1} calculation 
         # Rk = Rk - a_k.*conj.(transpose(A_pk)) # A^T... not sure how to do this here since we have operators and not matrices 
 
@@ -37,12 +37,7 @@ function bicg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
         # The bottom term is the same one calculated earlier 
         # Division 
         b_k = rkplus1_rkplus1/rkrk
-
         pk = rk + b_k.*pk
-        # Pk = Rk + b_k.*Pk
-
-        # global k+=1 
-
     end
     return xk
 end

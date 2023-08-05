@@ -1,3 +1,10 @@
+"""
+This module is a bicgstab linear system solver. It could technically be used
+instead of gmres to solve for the |T> but gmres is used because a CPU 
+version has been worked on. 
+
+Author: Nicolas Leblanc
+"""
 module gmres
 export GMRES_with_restart
 using product_sym_and_asym, LinearAlgebra # , vector
