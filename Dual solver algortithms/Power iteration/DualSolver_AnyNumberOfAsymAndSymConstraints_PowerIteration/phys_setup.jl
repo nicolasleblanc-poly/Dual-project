@@ -1,3 +1,10 @@
+"""
+The phys setup module (phys for physics) generates the different Green function
+operators as well as the initial electric field ei. 
+
+Author: Nicolas Leblanc
+"""
+
 module phys_setup 
 export G_create, ei_create
 using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 

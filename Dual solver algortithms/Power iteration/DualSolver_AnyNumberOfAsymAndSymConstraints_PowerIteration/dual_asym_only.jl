@@ -1,7 +1,3 @@
-module dual_asym_only
-export dual, c1
-using b_asym_only, gmres, product
-
 """
 This module is to get the value of the objective and of the dual.
 The code also calculates the constraints
@@ -10,6 +6,9 @@ and can return the gradient.
 Author: Nicolas Leblanc
 """
 
+module dual_asym_only
+export dual, c1
+using b_asym_only, gmres, product
 
 function c1(l,l2,P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,GAdj_T,i) # Asymmetric constraint 
 

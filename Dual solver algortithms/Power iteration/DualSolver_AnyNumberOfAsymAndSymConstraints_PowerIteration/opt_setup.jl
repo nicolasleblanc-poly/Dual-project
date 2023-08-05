@@ -1,3 +1,10 @@
+"""
+The opt setup module (opt for optimization) generate the P projection matrices
+as well as initial Lagrange multiplier values. 
+
+Author: Nicolas Leblanc
+"""
+
 module opt_setup 
 export Ps, L_mults
 using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 

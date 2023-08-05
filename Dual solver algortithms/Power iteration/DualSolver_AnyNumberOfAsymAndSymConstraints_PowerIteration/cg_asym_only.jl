@@ -1,13 +1,12 @@
-module cg_asym_only 
-export cg
-using product, LinearAlgebra, vector
-
-
 """
 This module is for the conjugate gradient program without a preconditionner. The written function is for the AA case of the Green function. Based on the example code from https://en.wikipedia.org/wiki/Conjugate_gradient_method
 
 Author: Nicolas Leblanc
 """
+
+module cg_asym_only 
+export cg
+using product, LinearAlgebra, vector
 
 # m is the maximum number of iterations
 function cg(l, l2, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)

@@ -1,14 +1,14 @@
-module bicg_asym_only 
-export bicg
-using product, LinearAlgebra, vector
-# Based on the example code from p. 686 (or p.696 of the pdf) of the Introduction to Numerical Analysis textbook
-
 """
 This module is for the biconjugate gradient program without a preconditionner. The written function is for the 
 AA case of the Green function. 
 
 Author: Nicolas Leblanc
 """
+
+module bicg_asym_only 
+export bicg
+using product, LinearAlgebra, vector
+# Based on the example code from p. 686 (or p.696 of the pdf) of the Introduction to Numerical Analysis textbook
 
 function bicg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
     xk = zeros(ComplexF64,length(b),1)

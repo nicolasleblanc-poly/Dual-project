@@ -1,9 +1,15 @@
-# ITEM is another option to the BFGS solver 
+"""
+This module is the ITEM algorithm. It is another option to the BFGS solver. It 
+hasn't been tested and this code is just a sample of the algorithm.  
+
+Author: Nicolas Leblanc
+"""
+
 module item_asym_only 
 using LinearAlgebra, bfgs_power_iteration_asym_only
 export ITEM 
 
-P in 3D 
+# P in 3D 
 
 
 function ITEM(gMemSlfN, gMemSlfA,l, l2,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)

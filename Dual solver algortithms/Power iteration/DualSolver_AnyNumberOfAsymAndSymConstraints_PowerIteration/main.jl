@@ -1,3 +1,9 @@
+"""
+This module is the main file that needs to be run.
+
+Author: Nicolas Leblanc
+"""
+
 using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 
 Base.Threads, FastGaussQuadrature, MaxGStructs, MaxGCirc, MaxGBasisIntegrals, 
 MaxGOpr, Printf, MaxGParallelUtilities, MaxGCUDA, Random, 
@@ -53,8 +59,8 @@ chi_inv_coeff_dag = conj(chi_inv_coeff)
 
 # Let's get the Ps 
 # These values are hard-coded for now 
-nb_complex_P = 0 + 1  # +1 for the number of complex constraint because the 0th constraint 
-# 4
+nb_complex_P = 0 + 1  # +1 for the number of complex constraint because the 
+# 0th constraint 
 nb_real_P =  0 # 4
 P = Ps(cellsA, nb_complex_P, nb_real_P)
 

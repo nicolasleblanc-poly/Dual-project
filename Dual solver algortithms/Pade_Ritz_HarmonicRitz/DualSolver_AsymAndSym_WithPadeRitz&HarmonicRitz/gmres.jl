@@ -5,6 +5,7 @@ version has been worked on.
 
 Author: Nicolas Leblanc
 """
+
 module gmres
 export GMRES_with_restart
 using product_sym_and_asym, LinearAlgebra # , vector

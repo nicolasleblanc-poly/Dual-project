@@ -1,9 +1,3 @@
-module bicgstab_asym_only 
-export bicgstab
-using product, LinearAlgebra, vector
-# Based on the example code from p. 686 (or p.696 of the pdf) of the Introduction to Numerical Analysis textbook
-
-
 """
 This module is for the stabilized biconjugate gradient program without a preconditionner. The written function is for the 
 AA case of the Green function. 
@@ -11,6 +5,10 @@ AA case of the Green function.
 Author: Nicolas Leblanc
 """
 
+module bicgstab_asym_only 
+export bicgstab
+using product, LinearAlgebra, vector
+# Based on the example code from p. 686 (or p.696 of the pdf) of the Introduction to Numerical Analysis textbook
 
 # Code for the AA case 
 # This is a biconjugate gradient program without a preconditioner
