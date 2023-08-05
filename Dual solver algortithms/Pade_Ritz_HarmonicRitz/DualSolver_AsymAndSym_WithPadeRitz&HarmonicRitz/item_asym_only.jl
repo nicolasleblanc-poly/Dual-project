@@ -1,7 +1,15 @@
+"""
+This module is the ITEM algorithm. It is another option to the BFGS solver. It 
+hasn't been tested and this code is just a sample of the algorithm.  
+
+Author: Nicolas Leblanc
+"""
+
 # ITEM is another option to the BFGS solver 
 module item_asym_only 
 using LinearAlgebra, bfgs_power_iteration_asym_only
 export ITEM 
+
 
 function ITEM(gMemSlfN, gMemSlfA,x0,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)
     mu=10e-8
@@ -9,7 +17,8 @@ function ITEM(gMemSlfN, gMemSlfA,x0,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)
     q=mu/L
     Ak=0
     xk=x0
-    yk=x0 # if norm(xk_p1-xk)<tol || norm(zk_p1-zk)<tol# && validityfunc(yk,cellsA,gMemSlfN, gMemSlfA, chi_inv_coeff, P)>0
+    yk=x0 
+    # if norm(xk_p1-xk)<tol || norm(zk_p1-zk)<tol# && validityfunc(yk,cellsA,gMemSlfN, gMemSlfA, chi_inv_coeff, P)>0
         #     print("Terminated while loop \n")
         #     print("norm(xk_p1-xk) ", norm(xk_p1-xk), "\n")
         #     print("norm(zk_p1-z) ", norm(zk_p1-zk), "\n")

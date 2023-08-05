@@ -19,8 +19,7 @@ end
 # m is the maximum number of iterations
 function ritz_bicgstab_operator(xi,l,gMemSlfN,gMemSlfA,cellsA,
     chi_inv_coeff,P, theta, u, b, tol_bicgstab)
-	# ritz_bicgstab_matrix(A, theta, u, b, tol_bicgstab)
-	# dim = size(A)[1]
+
 	dim = cellsA[1]*cellsA[2]*cellsA[3]*3
     vk = pk = xk = zeros(ComplexF64,length(b),1)
     # Ax=0 since the initial xk is 0
@@ -28,7 +27,7 @@ function ritz_bicgstab_operator(xi,l,gMemSlfN,gMemSlfA,cellsA,
     rho_m1 = alpha = omega_k = 1
 	k = 0
     for k in 1 : 1000
-        rho_k = dot(r0_hat,rk) # conj.(transpose(r0))*r_m1  
+        rho_k = dot(r0_hat,rk) 
         # Bêta calculation
         # First term 
         first_term = rho_k/rho_m1
@@ -43,13 +42,8 @@ function ritz_bicgstab_operator(xi,l,gMemSlfN,gMemSlfA,cellsA,
         A_pkPrj = xi*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, pkPrj)+l[1]*sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff, P, pkPrj)
         # Function to do the sum
         # A_pkPrj = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, pkPrj)
-		
-		# Old 
-		# A_pkPrj = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-		#     gMemSlfA,cellsA,chi_inv_coeff,P,pkPrj)
-		vk = projVec(dim, u, A_pkPrj .- (theta .* pkPrj))
-        # vk = projVec(dim, u, A * pkPrj .- (theta .* pkPrj))
-        
+	
+		vk = projVec(dim, u, A_pkPrj .- (theta .* pkPrj))        
 		
 		# alpha calculation
         # Bottom term
@@ -66,11 +60,7 @@ function ritz_bicgstab_operator(xi,l,gMemSlfN,gMemSlfA,cellsA,
         # Function to do the sum
         # A_sPrj = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, skPrj)
 		
-		# Old 
-		# A_sPrj = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-		# 	gMemSlfA,cellsA,chi_inv_coeff,P,sPrj)
 		t = projVec(dim, u, A_sPrj .- (theta .* sPrj))
-        # t = projVec(dim, u, A * sPrj .- (theta .* sPrj))
         
 		# omega_k calculation 
         # Top term 
@@ -81,11 +71,7 @@ function ritz_bicgstab_operator(xi,l,gMemSlfN,gMemSlfA,cellsA,
         omega_k = ts ./ tt
         xk = h + omega_k.*s
         rk = s-omega_k.*t
-		# print("s ", s, "\n")
-		# print("omega_k ", omega_k, "\n")
-		# print("t ", t, "\n")
 		rho_m1 = rho_k
-		# print("norm(rk) Ritz ", norm(rk), "\n")
         if norm(rk) < tol_bicgstab
 			return xk,k # k is essentially the number of iterations 
 			# to reach the chosen tolerance
@@ -94,60 +80,6 @@ function ritz_bicgstab_operator(xi,l,gMemSlfN,gMemSlfA,cellsA,
 	print("Didn't converge off tolerence \n")
     return xk,k # k is essentially the number of iterations 
 end
-
-
-
-function ritz_cg_matrix(A,theta,u,b,cg_tol)
-    # tol = 1e-5 # The program terminates once 
-    # there is an r for which its norm is smaller
-    # than the chosen tolerance. 
-	dim = size(A)[1]
-    xk = zeros(ComplexF64,length(b),1)
-    # Ax=0 since the initial xk is 0
-    pk = rk = b 
-    # k = 0
-    # for k in 1:length(b)
-	nb_it = 0
-    for k in 1:1000
-        # alpha_k coefficient calculation 
-        # Top term
-        rkrk = dot(rk,rk) # conj.(transpose(rk))*rk
-        print("rkrk ", rkrk, "\n")
-		# Bottom term 
-        pkPrj = projVec(dim, u, pk)
-        A_pkPrj = projVec(dim, u, A * pkPrj .- (theta .* pkPrj))
-        # A_pk = A*pk
-        pk_A_pkPrj = dot(pk,A_pkPrj) # conj.(transpose(pk))*A_pk
-        # Division
-        alpha_k = rkrk/pk_A_pkPrj
-
-        # x_{k+1} calculation 
-        xk = xk + alpha_k.*pk
-
-        # r_{k+1} calculation 
-        rk = rk - alpha_k.*A_pkPrj
-
-        # print("norm(rk_plus1) ",norm(rk), "\n")
-        if norm(rk)  < cg_tol
-            return xk,nb_it
-        end
-
-        # beta_k coefficient calculation 
-        # Top term 
-        rkplus1_rkplus1 = dot(rk,rk) # conj.(transpose(rk))*rk
-        # The bottom term is the same one calculated earlier 
-        # Division 
-        # print("rkplus1_rkplus1 ", rkplus1_rkplus1, "\n")
-        # print("rkrk ", rkrk, "\n")
-
-        beta_k = rkplus1_rkplus1/rkrk
-
-        pk = rk + beta_k.*pk
-		nb_it += 1
-    end
-	print("Didn't converge off bicgstab tolerance \n")
-    return xk,nb_it
-end 
 
 function gramSchmidt!(basis::Array{T}, n::Integer, tol::Float64) where T <: Number
 
@@ -213,10 +145,6 @@ function jacDavRitz_basic(xi,l,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,innerLoo
 	# Function to do the sum
 	# outVec = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,1])
 
-	# Old 
-	# outVec = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-	# gMemSlfA,cellsA,chi_inv_coeff,P,basis[:, 1])
-
 	# Hessenberg matrix
 	hesse[1,1] = BLAS.dotc(dim, view(basis, :, 1), 1, outVec, 1) 
 	# Ritz value
@@ -235,8 +163,6 @@ function jacDavRitz_basic(xi,l,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,innerLoo
 	for itr in 2 : innerLoopDim
 
 		# Jacobi-Davidson direction
-		# basis[:, itr],nb_it = ritz_cg_operator(alpha_0,alpha_1,xi,P_0,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P, theta, ritzVec, resVec, 
-		# 	tol_bicgstab)
 		basis[:, itr],nb_it = ritz_bicgstab_operator(xi,l,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P, theta, ritzVec, resVec, 
 			tol_bicgstab)
 		nb_it_total_bicgstab_solve += nb_it
@@ -250,12 +176,6 @@ function jacDavRitz_basic(xi,l,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,innerLoo
 		outVec = xi*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,itr])+l[1]*sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff, P, basis[:,itr])
 		# Function to do the sum
 		# outVec = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,itr])
-
-		# Old 
-		# outVec = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-		# 	gMemSlfA,cellsA,chi_inv_coeff,P,basis[:, itr])
-
-			
 
 		# Update Hessenberg
 		hesse[1 : itr, itr] = BLAS.gemv('C', view(basis, :, 1 : itr), outVec)
@@ -271,11 +191,6 @@ function jacDavRitz_basic(xi,l,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,innerLoo
 		outVec = xi*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, ritzVec)+l[1]*sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff, P, ritzVec)
 		# Function to do the sum
 		# outVec = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, ritzVec)
-
-		# Old 
-		# outVec = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-		# 	gMemSlfA,cellsA,chi_inv_coeff,P,ritzVec)
-		# outVec = opt * ritzVec
 
 		# Update residual vector
 		resVec = (theta * ritzVec) .- outVec
@@ -327,11 +242,6 @@ function jacDavRitz_basic_for_restart(xi,l,gMemSlfN,gMemSlfA,
 	# Function to do the sum
 	# outVec = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,1])
 
-	# Old 
-	# outVec = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-	# gMemSlfA,cellsA,chi_inv_coeff,P,basis[:, 1])
-	# outVec = opt * basis[:, 1] 
-
 	# Hessenberg matrix
 	hesse[1,1] = BLAS.dotc(dim, view(basis, :, 1), 1, outVec, 1) 
 	# Ritz value
@@ -348,14 +258,11 @@ function jacDavRitz_basic_for_restart(xi,l,gMemSlfN,gMemSlfA,
 	nb_it_total_bicgstab_solve = 0.0
 
 	eigenvectors = Array{ComplexF64}(undef, innerLoopDim,innerLoopDim)
-	# eigenvectors = Array{ComplexF64}(undef, innerLoopDim,restartDim)
 	eigenvalues = Vector{ComplexF64}(undef, innerLoopDim)
 
 	for itr in 2 : innerLoopDim
 
-		# Jacobi-Davidson direction
-		# basis[:, itr],nb_it = ritz_cg_operator(alpha_0,alpha_1,xi,P_0,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P, theta, ritzVec, resVec, 
-		# 	tol_bicgstab)
+		# Jacobi-Davidson direction 
 		basis[:, itr],nb_it = ritz_bicgstab_operator(xi,l,
 			gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P, theta, ritzVec, resVec, 
 				tol_bicgstab)
@@ -369,11 +276,6 @@ function jacDavRitz_basic_for_restart(xi,l,gMemSlfN,gMemSlfA,
 		outVec = xi*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,itr])+l[1]*sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff, P, basis[:,itr])
 		# Function to do the sum
 		# outVec = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,itr])
-
-		# Old 
-		# outVec = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-		# 	gMemSlfA,cellsA,chi_inv_coeff,P,basis[:, itr])
-		# outVec = opt * basis[:, itr] 
 
 		# Update Hessenberg
 		hesse[1 : itr, itr] = adjoint(view(basis, :, 1 : itr))*outVec
@@ -394,11 +296,6 @@ function jacDavRitz_basic_for_restart(xi,l,gMemSlfN,gMemSlfA,
 		outVec = xi*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, ritzVec)+l[1]*sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff, P, ritzVec)
 		# Function to do the sum
 		# outVec = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, ritzVec)
-
-		# Old 
-		# outVec = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-		# 	gMemSlfA,cellsA,chi_inv_coeff,P,ritzVec)
-		# outVec = opt * ritzVec
 
 		# Update residual vector
 		resVec = (theta * ritzVec) .- outVec
@@ -440,8 +337,6 @@ function jacDavRitz_restart(xi,l,gMemSlfN,gMemSlfA,cellsA,
 
 	eigenvectors = zeros(ComplexF64, innerLoopDim, innerLoopDim)
 	eigenvalues = zeros(ComplexF64, innerLoopDim)
-	# eigenvectors = Array{ComplexF64}(undef, innerLoopDim,innerLoopDim)
-	# eigenvalues = Vector{ComplexF64}(undef, innerLoopDim)
 
 	restart_outVec = zeros(ComplexF64, dim)
 	restart_resVec = zeros(ComplexF64, dim)
@@ -467,11 +362,6 @@ function jacDavRitz_restart(xi,l,gMemSlfN,gMemSlfA,cellsA,
 	outVec = xi*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,1])+l[1]*sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff, P, basis[:,1])
 	# Function to do the sum
 	# outVec = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,1])
-
-	# Old 
-	# outVec = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-	# gMemSlfA,cellsA,chi_inv_coeff,P,basis[:, 1])
-	# outVec = opt * basis[:, 1] 
 
 	# Hessenberg matrix
 	hesse[1,1] = BLAS.dotc(dim, view(basis, :, 1), 1, outVec, 1) 
@@ -510,8 +400,6 @@ function jacDavRitz_restart(xi,l,gMemSlfN,gMemSlfA,cellsA,
 
 			eigenvectors = zeros(ComplexF64, innerLoopDim, innerLoopDim)
 			eigenvalues = zeros(ComplexF64, innerLoopDim)
-			# eigenvectors = Array{ComplexF64}(undef, innerLoopDim,innerLoopDim)
-			# eigenvalues = Vector{ComplexF64}(undef, innerLoopDim)
 
 			basis = zeros(ComplexF64, dim,dim)
 			basis[:,1:restartDim] = restart_basis
@@ -522,8 +410,6 @@ function jacDavRitz_restart(xi,l,gMemSlfN,gMemSlfA,cellsA,
 
 			for itr in restartDim+1:innerLoopDim
 				# Jacobi-Davidson direction
-				# basis[:, itr],nb_it = ritz_cg_operator(alpha_0,alpha_1,xi,P_0,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P, theta, ritzVec, resVec, 
-				# 	tol_bicgstab)
 				basis[:, itr],nb_it = ritz_bicgstab_operator(xi,
 					l,gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P, theta,ritzVec, 
 						resVec, tol_bicgstab)
@@ -531,16 +417,12 @@ function jacDavRitz_restart(xi,l,gMemSlfN,gMemSlfA,cellsA,
 
 				# Orthogonalize
 				gramSchmidt!(basis, itr, tol_MGS)
-				# New image# Need to compare the output of these two ways of doing this product
+				# New image
+				# Need to compare the output of these two ways of doing this product
 				# Direct sum 
 				outVec = xi*asym_vect(gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,itr])+l[1]*sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff, P, basis[:,itr])
 				# Function to do the sum
 				# outVec = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, basis[:,itr])
-
-				# Old 
-				# outVec = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-				# 	gMemSlfA,cellsA,chi_inv_coeff,P,basis[:, itr])
-				# outVec = opt * basis[:, itr] 
 
 				# Update Hessenberg
 				hesse[1 : itr, itr] = adjoint(view(basis, :, 1 : itr))*outVec
@@ -568,18 +450,12 @@ function jacDavRitz_restart(xi,l,gMemSlfN,gMemSlfA,cellsA,
 				# Function to do the sum
 				# outVec = sym_and_asym_sum(xi,l,gMemSlfN,gMemSlfA, cellsA, chi_inv_coeff, P, ritzVec)
 
-				# Old 
-				# outVec = green_vect_prod_pade(alpha_0,alpha_1,xi,P_0,gMemSlfN,
-				# 	gMemSlfA,cellsA,chi_inv_coeff,P,ritzVec)
-				# outVec = opt * ritzVec
-
 				# Update residual vector
 				resVec = (theta * ritzVec) .- outVec
 
 				# Direction vector tolerance check 
 				if norm(resVec) < tol_conv
 					print("Basic algo converged off resVec tolerance \n")
-					# print("norm(resVec) ", norm(resVec), "\n")
 					return real(theta) # ,nb_it_restart,nb_it_total_bicgstab_solve
 				end
 
@@ -609,8 +485,6 @@ function jacDavRitz_restart(xi,l,gMemSlfN,gMemSlfA,cellsA,
 		# Create trgBasis and srcBasis for restart
 		"""
 		for i = 1:restartDim
-			# print("eigenvalues[1] ", eigenvalues[1], "\n")
-			# print("eigenvalues[end] ", eigenvalues[end], "\n")
 			# Creation of new trgBasis and srcBasis matrices 
 			if abs.(eigenvalues[end]) > abs.(eigenvalues[1]) 
 				u_matrix[1:innerLoopDim,i] = eigenvectors[:, end]
@@ -643,39 +517,63 @@ function jacDavRitz_restart(xi,l,gMemSlfN,gMemSlfA,cellsA,
 
 	print("Didn't converge off tolerance for basic program. 
 	Atteined max set number of iterations \n")
-	return (real(theta)) # ritzVec,,nb_it_restart,nb_it_total_bicgstab_solve
+	return (real(theta)) 
 end
 
-# sz = 100
-# tol_MGS = 1e-9
-# tol_conv = 1e-6
-# tol_bicgstab = 1e-4
-# tol_cg = 1e-4
-# tol_eigval = 1e-6
-# max_nb_it = 1000
-# A = Array{ComplexF64}(undef,sz,sz)
-# rand!(A)
-# A[:,:] .= (A .+ adjoint(A)) ./ 2
-# trueEigSys = eigen(A)
-# minEigPos = argmin(abs.(trueEigSys.values))
-# minEig = trueEigSys.values[minEigPos]
-# dims = size(A)
-# # print("dims[1] ", dims[1], "\n")
-# # print("dims[2] ", dims[2], "\n")
-# u = Vector{ComplexF64}(undef, dims[2])
-# b = Vector{ComplexF64}(undef, dims[2])
-# rand!(u)
-# rand!(b)
-# theta = 2
-
-# # val,nb_it = ritz_bicgstab_matrix(A, theta, u, b, tol_bicgstab)
-# innerLoopDim = 50
-# restartDim = 5
-# eigval,nb_it1,nb_it2 = jacDavRitz_restart(A,innerLoopDim,restartDim,tol_MGS,
-# 	tol_conv,tol_eigval,tol_bicgstab)
-# # print("bicgstab solution ", val, "\n")
-# # print("direct solve ", ((I-u*adjoint(u))*(A-theta*I)*(I-u*adjoint(u)))\b, "\n")
-
-# println("The different Julia eigenvalues are ", trueEigSys.values,".")
-# print("Harmonic Ritz eigenvalue closest to 0 is ", eigval, "\n")
 end
+
+"""
+Instead of bicgstab, conjugate gradient could have been used. The code below
+shows the code that could have been used. 
+"""
+# function ritz_cg_matrix(A,theta,u,b,cg_tol)
+#     # tol = 1e-5 # The program terminates once 
+#     # there is an r for which its norm is smaller
+#     # than the chosen tolerance. 
+# 	dim = size(A)[1]
+#     xk = zeros(ComplexF64,length(b),1)
+#     # Ax=0 since the initial xk is 0
+#     pk = rk = b 
+#     # k = 0
+#     # for k in 1:length(b)
+# 	nb_it = 0
+#     for k in 1:1000
+#         # alpha_k coefficient calculation 
+#         # Top term
+#         rkrk = dot(rk,rk) # conj.(transpose(rk))*rk
+#         print("rkrk ", rkrk, "\n")
+# 		# Bottom term 
+#         pkPrj = projVec(dim, u, pk)
+#         A_pkPrj = projVec(dim, u, A * pkPrj .- (theta .* pkPrj))
+#         # A_pk = A*pk
+#         pk_A_pkPrj = dot(pk,A_pkPrj) # conj.(transpose(pk))*A_pk
+#         # Division
+#         alpha_k = rkrk/pk_A_pkPrj
+
+#         # x_{k+1} calculation 
+#         xk = xk + alpha_k.*pk
+
+#         # r_{k+1} calculation 
+#         rk = rk - alpha_k.*A_pkPrj
+
+#         # print("norm(rk_plus1) ",norm(rk), "\n")
+#         if norm(rk)  < cg_tol
+#             return xk,nb_it
+#         end
+
+#         # beta_k coefficient calculation 
+#         # Top term 
+#         rkplus1_rkplus1 = dot(rk,rk) # conj.(transpose(rk))*rk
+#         # The bottom term is the same one calculated earlier 
+#         # Division 
+#         # print("rkplus1_rkplus1 ", rkplus1_rkplus1, "\n")
+#         # print("rkrk ", rkrk, "\n")
+
+#         beta_k = rkplus1_rkplus1/rkrk
+
+#         pk = rk + beta_k.*pk
+# 		nb_it += 1
+#     end
+# 	print("Didn't converge off bicgstab tolerance \n")
+#     return xk,nb_it
+# end 

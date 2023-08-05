@@ -1,3 +1,9 @@
+"""
+This module is the main file that needs to be run.
+
+Author: Nicolas Leblanc
+"""
+
 using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 
 Base.Threads, FastGaussQuadrature, MaxGStructs, MaxGCirc, MaxGBasisIntegrals, 
 MaxGOpr, Printf, MaxGParallelUtilities, MaxGCUDA, Random, 
@@ -5,9 +11,6 @@ product_sym_and_asym, bfgs_pade_sym_and_asym, dual_asym_only, gmres,
 approx_xi_solve_Ritz_HarmonicRitz_GreenOperator_sym_and_asym, PadeForRitz_GreenOperator_Code_sym_and_asym,
 Restart_HarmonicRitz_EigvalClosestToZero_jacobiDavidson_operator_sym_and_asym,
 Restart_Ritz_jacobiDavidson_operator_sym_and_asym, b_sym_and_asym
-
-# The following latex files explains the different functions of the program
-# https://www.overleaf.com/read/yrdmwzjhqqqs
 
 threads = nthreads()
 # Set the number of BLAS threads. The number of Julia threads is set as an 
@@ -56,22 +59,9 @@ println("Green function construction completed.")
 currSrcAB = Array{ComplexF64}(undef, cellsB[1], cellsB[2], cellsB[3], 3)
 
 # Calculate ei electric field vector 
-# elecIn = Array{ComplexF64}(undef, cellsA[1], cellsA[2], cellsA[3], 3) 
-# elecIn_vect = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-# currSrcAB[1,1,1,3] = 10.0 + 0.0im
-
-# Good ei code start 
 ei = Gv_AB(gMemExtN, cellsA, cellsB, currSrcAB) # This is a vector, so it is already reshaped
 print("ei ", ei, "\n")
 # Good ei code end 
-
-# copy!(elecIn,GAB_curr);
-# elecIn_reshaped = reshape(elecIn, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-# print(reshape(elecIn, (cellsA[1]*cellsA[2]*cellsA[3]*3)))
-# print(size(reshape(elecIn, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))))
-# print(ei)
-
-# End 
 
 # Let's define some values used throughout the program.
 # chi coefficient
@@ -79,7 +69,7 @@ chi_coeff = 3.0 + 0.01im
 # inverse chi coefficient
 chi_inv_coeff = 1/chi_coeff 
 chi_inv_coeff_dag = conj(chi_inv_coeff)
-# 
+
 # P = I # this is the real version of the identity matrix since we are considering 
 # # the symmetric and ansymmetric parts of some later calculations. 
 # # If we were only considering the symmetric parts of some latter calculations,
@@ -145,9 +135,3 @@ print("objval ", objval, "\n")
 # print("objval ", item[4], "\n")
 
 
-
-# testvect = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3,1)
-# rand!(testvect)
-# print("Gv_AA(gMemSlfN, cellsA, vec) ", Gv_AA(gMemSlfN, cellsA, testvect), "\n")
-# print("l[1]*asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,testvect)", l[1]*asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,testvect)
-# , "\n")

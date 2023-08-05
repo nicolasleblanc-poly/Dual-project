@@ -1,3 +1,10 @@
+"""
+This module is the root solver algorithm that uses Padé to find the last 0 
+crossing of the surrogate function.
+
+Author: Nicolas Leblanc
+"""
+
 module PadeForRitz_GreenOperator_Code_sym_and_asym
 
 using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 
@@ -20,6 +27,9 @@ function surrogate_function(xi,l,P,ei,b,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff
     return c1(P,ei,T,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff) # Asym constraint
 end 
 
+"""
+If ever you want to plot the surrogate function. 
+"""
 # function plot_surrogate_func(xi,l,P,ei,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, max_val,ind)
 #     xi_vals = LinRange(0,max_val,max_val) 
 #     surr_func_vals = Vector{Float64}(undef,max_val)
@@ -44,7 +54,7 @@ end
 #     end
 # end 
 
-################################################ Peak finders
+################################## Peak finders #############################
 function peak_finder(xs, ys)  # Finds the peaks within the sampled point 
     slope_criteria = 2 # This needs to be more dynamic, to account for the amount of sampled points
     peaks = []
@@ -72,7 +82,7 @@ function peak_finder(xs, ys)  # Finds the peaks within the sampled point
     return peaks
 end
 
-################################################### Padé function
+##################################### Padé function ##########################
 # x : x values for the sampled points
 # y : y values for the sampled points
 # N : number of points used to evaluate the approximate once it has been built using x,y 
@@ -80,9 +90,8 @@ end
 # xr : right bound up to which the Padé is evaluated
 # rebuild_with : evaluates the constructed Padé at the x values in this list
 
-# function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
 function Pade(x, y, x_start; N = 500, xl = 0.0, rebuild_with = [])
-    #Padé approximant algorithm
+    # Padé approximant algorithm
     x = x
     r = y
     l = length(x)
@@ -159,9 +168,9 @@ function rebuild(x,l,P,X)  # Rebuild the approximation from the little blocks ##
 end
 
 
-################################################### First test that needs to be done
-#this test samples the function initially to determine where is the
-#region in which the function is definitly above zero
+############################ First test that needs to be done #################
+# This first sampling function samples the function initially to determine 
+# where is the region in which the function is definitly above zero.
 
 function first_sampling(x_start,l,ei,b,cellsA,gMemSlfN,gMemSlfA,chi_inv_coeff,P)
     print("x_start ", x_start, "\n")
@@ -243,46 +252,6 @@ function first_sampling(x_start,l,ei,b,cellsA,gMemSlfN,gMemSlfA,chi_inv_coeff,P)
     return xs, ys, xl, xr
 end
 
-################################################### Padé stop criteria test
-# This function checks wheter that last sampling changed the Padé approximant
-# significantly or not. If not, stop sampling.
-# It keeps in memory previous sampling to compare them
-function pade_stop_criteria(xl,x_start,big_x_sampled,big_y_sampled,errors)
-    local pade_x1, pade_y1, pade_x2, pade_y2, error
-    stop_crit = false
-    if length(big_x_sampled) <= 1
-        #do nothing
-        return errors,stop_crit
-    elseif length(big_x_sampled) > 1
-        # Compare samplings
-        N = 1000
-        pade_x1, pade_y1 = Pade(big_x_sampled[end],big_y_sampled[end],x_start,N=N,xl=xl)
-        pade_x2, pade_y2 = Pade(big_x_sampled[end-1],big_y_sampled[end-1],x_start,N=N,xl=xl)
-        # Calculate error between the two Padé's in between a relevant x range
-        error = 0
-        for i in range(1,length(pade_x1))
-            error += abs(pade_y2[i] - pade_y1[i])/N
-        end
-        push!(errors, error)
-        # Critera to see by how much the error shrunk from one iteration to the next
-        if length(errors)>1
-            ratio = errors[end-1]/errors[end]
-            print("ratio ", ratio, "\n")
-            push!(ratios, ratio)
-            # Checks if the error is diminishing with each extra sampling (needs to diminish twice in a row)
-            if length(ratios)>2
-                if ratios[end]<ratios[end-1] && ratios[end-1] < ratios[end-2]
-                    stop_crit = true
-                    println("Done \n")
-                    return errors,stop_crit
-                else
-                    return errors,stop_crit # stop_crit is false in this case
-                end
-            end
-        end
-    end
-end
-
 
 ############################ Bissection root finding ##########################
 # x1: starting point to the left
@@ -310,6 +279,8 @@ function bissection(x1,x2,x_start,ϵ,N,big_x_sampled,big_y_sampled)
     return (xm, fxm)
 end
 
+# This is the main function that is called to solve for the last crossing 
+# of the surrogate function. 
 function root_solve(xi,l,P,cellsA,gMemSlfN,gMemSlfA,chi_inv_coeff,ei,b,
         innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bissection,
             tol_bicgstab)
@@ -322,9 +293,6 @@ function root_solve(xi,l,P,cellsA,gMemSlfN,gMemSlfA,chi_inv_coeff,ei,b,
     surr_func_x_start = surrogate_function(x_start,l,P,ei,b,cellsA, gMemSlfN,
         gMemSlfA, chi_inv_coeff)[1]
     print("surr_func_x_start: ", surr_func_x_start, "\n")
-    
-    # plot_surrogate_func(xi,l,P,ei,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,
-    #     Int(round(x_start))+100,1)
 
     print("Started first sampling \n")
     xs, ys , xl, xr = first_sampling(x_start,l,ei,b,cellsA,gMemSlfN,gMemSlfA,
@@ -416,15 +384,12 @@ function root_solve(xi,l,P,cellsA,gMemSlfN,gMemSlfA,chi_inv_coeff,ei,b,
            
         elseif abs(surr_func_xi_zeros) < tol_bissection
             print("The guessed root is: ", zeros[1])
-            # plot_surrogate_func(xi,l,P,ei,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,Int(round(zeros[1]))+50,2)
             return zeros[1],surr_func_xi_zeros
         end
         
     end
     print("Went through all of the iterations \n")
     print("The guessed root is: ", zeros[1])
-    # plot_surrogate_func(xi,l,P,ei,cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff,Int(round(zeros[1]))+50,2)
     return zeros[1],surr_func_xi_zeros
 end
-
 end
