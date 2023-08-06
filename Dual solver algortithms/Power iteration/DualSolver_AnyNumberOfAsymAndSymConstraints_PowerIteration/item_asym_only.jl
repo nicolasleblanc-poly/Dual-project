@@ -9,9 +9,6 @@ module item_asym_only
 using LinearAlgebra, bfgs_power_iteration_asym_only
 export ITEM 
 
-# P in 3D 
-
-
 function ITEM(gMemSlfN, gMemSlfA,l, l2,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)
     mu=10e-8 
     L=10e6

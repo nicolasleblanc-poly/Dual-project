@@ -1,3 +1,10 @@
+"""
+This module is for the stabilized biconjugate gradient program without a preconditionner. The written function is for the 
+AA case of the Green function. 
+
+Author: Nicolas Leblanc
+"""
+
 module bicgstab_asym_only 
 export bicgstab
 using product, LinearAlgebra, vector

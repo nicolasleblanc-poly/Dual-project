@@ -1,3 +1,9 @@
+"""
+This module is the main file that needs to be run.
+
+Author: Nicolas Leblanc
+"""
+
 using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 
 Base.Threads, FastGaussQuadrature, MaxGStructs, MaxGCirc, MaxGBasisIntegrals, 
 MaxGOpr, Printf, MaxGParallelUtilities, MaxGCUDA, Random, 
@@ -19,55 +25,6 @@ blasThreads = BLAS.get_num_threads()
 fftwThreads = FFTW.get_num_threads()
 println("MaxGTests initialized with ", nthreads(), 
 	" Julia threads, $blasThreads BLAS threads, and $fftwThreads FFTW threads.")
-
-
-# # Old Green function code start
-# # Setup for the creation of the total Green function
-# # Start 
-# # Define test volume, all lengths are defined relative to the wavelength. 
-# # Number of cells in the volume. 
-# # cellsA = [8, 8, 8]
-# cellsA = [2, 2, 2]
-# cellsB = [1, 1, 1]
-# # Edge lengths of a cell relative to the wavelength. 
-# scaleA = (0.02, 0.02, 0.02)
-# scaleB = (0.02, 0.02, 0.02)
-# # Center position of the volume. 
-# coordA = (0.0, 0.0, 0.0)
-# coordB = (-0.3, 0.0, 0.0)
-# # Create MaxG volumes.
-# volA = genMaxGVol(MaxGDom(cellsA, scaleA, coordA))
-# volB = genMaxGVol(MaxGDom(cellsB, scaleB, coordB))
-# # Information for Green function construction. 
-# # Complex frequency ratio. 
-# freqPhase = 1.0 + im * 0.0
-# # Gauss-Legendre approximation orders. 
-# ordGLIntFar = 2
-# ordGLIntMed = 8
-# ordGLIntNear = 16
-# # Cross over points for Gauss-Legendre approximation.
-# crossMedFar = 16
-# crossNearMed = 8
-# assemblyInfo = MaxGAssemblyOpts(freqPhase, ordGLIntFar, ordGLIntMed, 
-# 	ordGLIntNear, crossMedFar, crossNearMed)
-# # Pre-allocate memory for circulant green function vector. 
-# # Let's say we are only considering the AA case for simplicity
-# greenCircAA = Array{ComplexF64}(undef, 3, 3, 2 * cellsA[1], 2 * cellsA[2], 
-# 	2 * cellsA[3])
-# greenCircAB = Array{ComplexF64}(undef, 3, 3, cellsB[1] + cellsA[1], cellsB[2] +
-# 	cellsA[2], cellsB[3] + cellsA[3])
-# # End 
-
-# CPU computation of Green function
-# Start 
-# The first index is the target and the second is the source
-# # For the AA case 
-# genGreenSlf!(greenCircAA, volA, assemblyInfo)
-# # For the AB case 
-# genGreenExt!(greenCircAB, volA, volB, assemblyInfo)
-# # End 
-# # Old Green function code end
-
 
 # New Green function code start 
 # Define test volume, all lengths are defined relative to the wavelength. 
@@ -120,23 +77,11 @@ println("Green function construction completed.")
 # Source current memory
 currSrcAB = Array{ComplexF64}(undef, cellsB[1], cellsB[2], cellsB[3], 3)
 
-# Calculate ei electric field vector 
-# elecIn = Array{ComplexF64}(undef, cellsA[1], cellsA[2], cellsA[3], 3) 
-# elecIn_vect = Array{ComplexF64}(undef, cellsA[1]*cellsA[2]*cellsA[3]*3, 1)
-# currSrcAB[1,1,1,3] = 10.0 + 0.0im
-
 # Good ei code start 
 ei = Gv_AB(gMemExtN, cellsA, cellsB, currSrcAB) # This is a vector, so it is already reshaped
 print("ei ", ei, "\n")
 # Good ei code end 
 
-# copy!(elecIn,GAB_curr);
-# elecIn_reshaped = reshape(elecIn, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))
-# print(reshape(elecIn, (cellsA[1]*cellsA[2]*cellsA[3]*3)))
-# print(size(reshape(elecIn, (cellsA[1]*cellsA[2]*cellsA[3]*3,1))))
-# print(ei)
-
-# End 
 
 # Let's define some values used throughout the program.
 # chi coefficient
@@ -146,7 +91,6 @@ chi_inv_coeff = 1/chi_coeff
 chi_inv_coeff_dag = conj(chi_inv_coeff)
 # define the projection operators
 
-# What is the length of P? How do we fill in P precisely?
 
 P = I # this is the real version of the identity matrix since we are considering 
 # the symmetric and ansymmetric parts of some later calculations. 

@@ -1,17 +1,14 @@
+"""
+The product module contains the functions to do the product between the 
+different Green functions and a vector. 
+
+Author: Nicolas Leblanc
+"""
+
 module product 
-# using Random, MaxGOpr, FFTW, Distributed, MaxGParallelUtilities, MaxGStructs, 
-# MaxGBasisIntegrals, MaxGCirc, LinearAlgebra, MaxGCUDA,  MaxGOpr
-
-
 using LinearAlgebra, LinearAlgebra.BLAS, Distributed, FFTW, Cubature, 
 Base.Threads, FastGaussQuadrature, MaxGStructs, MaxGCirc, MaxGBasisIntegrals, 
 MaxGOpr, Printf, MaxGParallelUtilities, MaxGCUDA, Random
-
-# using MaxGOpr
-# using Distributed
-# @everywhere using Printf, Base.Threads, LinearAlgebra.BLAS, MaxGParallelUtilities, MaxGStructs, 
-# MaxGBasisIntegrals, MaxGCirc, LinearAlgebra, MaxGCUDA,  MaxGOpr, Random, FFTW
-
 export Gv_AA, GAdjv_AA, Gv_AB, A, asym, sym, asym_vect, sym_vect# , test
 
 # Green function test function 
@@ -21,7 +18,6 @@ export Gv_AA, GAdjv_AA, Gv_AB, A, asym, sym, asym_vect, sym_vect# , test
 # 	grnOpr!(gMemSlfN) # Same thing as greenActAA!()
 # 	print("gMemSlfN.trgVec ",gMemSlfN.trgVec, "\n")
 # end
-
 
 # Function of the (G_{AA})v product 
 function Gv_AA(gMemSlfN, cellsA, vec) # offset
@@ -81,65 +77,27 @@ function G_offset(v, mode) # offset,
 end
 
 function asym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
-	# print("size(vect)", size(vect), "\n")
 	chi_inv_coeff_dag = conj(chi_inv_coeff)
 	term_1 = chi_inv_coeff_dag*vec # *P 
 	term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
 	term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
 	term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
-	# print("size(term_1)", size(term_1), "\n")
-	# print("size(term_2)", size(term_2), "\n")
-	# print("term_1 " , term_1, "\n")
-	# print("term_2 " , term_2, "\n")
-	# print("term_3 " , term_3, "\n")
-	# print("term_4 " , term_4, "\n")
 	return (term_1.-term_2.+ term_4.-term_3)./2im # 
 end 
 
 function sym_vect(gMemSlfN,gMemSlfA,cellsA,chi_inv_coeff,P,vec)
-	# print("size(vect)", size(vect), "\n")
 	chi_inv_coeff_dag = conj(chi_inv_coeff)
 	term_1 = chi_inv_coeff_dag*vec # *P 
 	term_2 = GAdjv_AA(gMemSlfA, cellsA, vec) # P*
 	term_3 = chi_inv_coeff*vec # *P # supposed to be *conj.(transpose(P)) but gives error, so let's use *P for now
 	term_4 = Gv_AA(gMemSlfN, cellsA, vec) # P*
-	# print("size(term_1)", size(term_1), "\n")
-	# print("size(term_2)", size(term_2), "\n")
-	# print("term_3 " , term_3, "\n")
 	return (term_1.-term_2.- term_4.+term_3)./2  
 end
 
 
 end
 
-# Old code and test code below 
-
-# Old code 
-# Start of old code 
-# function A(greenCircAA, cellsA, chi_inv_coeff, l, P, vect)
-# 	# For when we will also consider the symmetric part + l[2]sym(greenCircAA, cellsA, chi_inv_coeff, P))
-# 	return l[1]*(asym(greenCircAA, cellsA, chi_inv_coeff, P))
-# end
-
-# function asym(greenCircAA, cellsA, chi_inv_coeff, P)
-# 	chi_inv_coeff_dag = conj(chi_inv_coeff)
-# 	# print("chi_inv_coeff_dag ",chi_inv_coeff_dag, "\n")
-# 	term_1 = chi_inv_coeff_dag*P 
-# 	term_2 = GAdjv_AA(greenCircAA, cellsA, P)
-# 	term_3 = chi_inv_coeff*conj.(transpose(P))
-# 	term_4 = Gv_AA(greenCircAA, cellsA, P)
-# 	return (term_1-term_2-term_3+term_4)/2im
-# end
-
-# function sym(greenCircAA, cellsA, chi_inv_coeff, P)
-# 	chi_inv_coeff_dag = conj(chi_inv_coeff)
-# 	term_1 = chi_inv_coeff_dag*P 
-# 	term_2 = GAdjv_AA(greenCircAA, cellsA, P)
-# 	term_3 = chi_inv_coeff*conj.(transpose(P))
-# 	term_4 = Gv_AA(greenCircAA, cellsA, P)
-# 	return (term_1-term_2-term_3+term_4)/2
-# end
-# End of old code 
+# Test code below 
 
 # Test code 
 # Start of test code 

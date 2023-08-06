@@ -1,3 +1,9 @@
+"""
+This module is for the conjugate gradient program without a preconditionner. The written function is for the AA case of the Green function. Based on the example code from https://en.wikipedia.org/wiki/Conjugate_gradient_method
+
+Author: Nicolas Leblanc
+"""
+
 module cg_asym_only 
 export cg
 using product, LinearAlgebra, vector
@@ -6,14 +12,10 @@ using product, LinearAlgebra, vector
 
 # m is the maximum number of iterations
 function cg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
-    # tol = 1e-5 # The program terminates once 
-    # there is an r for which its norm is smaller
-    # than the chosen tolerance. 
 
     xk = zeros(ComplexF64,length(b),1)
     # Ax=0 since the initial xk is 0
     pk = rk = b 
-    # k = 0
     for k in 1:length(b)
         # alpha_k coefficient calculation 
         # Top term
@@ -43,8 +45,6 @@ function cg(l, b, cellsA, gMemSlfN,gMemSlfA, chi_inv_coeff, P)
         beta_k = rkplus1_rkplus1/rkrk
 
         pk = rk + beta_k.*pk
-
-        # global k+=1 
 
     end
     return xk

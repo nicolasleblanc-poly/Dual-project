@@ -1,4 +1,10 @@
-# ITEM is another option to the BFGS solver 
+"""
+This module is the ITEM algorithm. It is another option to the BFGS solver. It 
+hasn't been tested and this code is just a sample of the algorithm.  
+
+Author: Nicolas Leblanc
+"""
+
 module item_asym_only 
 using LinearAlgebra, bfgs_power_iteration_asym_only
 export ITEM 
@@ -96,52 +102,3 @@ function ITEM(gMemSlfN, gMemSlfA,x0,Dual,P,chi_inv_coeff,ei,cellsA,validityfunc)
 end 
 end 
 
-
-# while cdn == false && indom == false # Setup for 20 steps
-#         Ak=((1+q)*Ak+2*(1+sqrt((1+Ak)*(1+q*Ak))))/(1-q)^2
-#         bk=Ak/((1-q)*Ak)
-#         dk=((1-q^2)*Ak-(1+q)*Ak)/(2*(1+q+q*Ak))
-#         # Store the previous xk, yk and zk values to calculate the norm
-#         xk_m1=xk # The m1 in xk_m1 means minus 1, so it is the previous term to xk
-#         yk_m1=yk
-#         zk_m1=zk
-#         # Let's calculate the new yk 
-#         yk = (1-bk)*zk_m1+bk*xk_m1
-#         print("(1-bk)", (1-bk),"\n")
-#         print("zk_m1 ", zk_m1,"\n")
-#         print("(1-bk)*zk_m1 ", (1-bk)*zk_m1,"\n")
-#         print("bk*xk_m1 ", bk*xk_m1,"\n")
-#         # We need to solve for |T> with the yk multipliers
-#         val_yk = Dual(yk,grad,P,ei,gMemSlfN,gMemSlfA, chi_inv_coeff, cellsA,[],true)
-#         # Old: (yk, grad, fSlist, tsolver,ei,  ei_tr, chi_invdag, Gdag, Pv, get_grad=true)
-#         T_yk = val_yk[1] # We don't use this here but it was used to calculate the gradient below
-#         g_yk = val_yk[2] # This is the gradient evaluated at the |T> found with the yk multipliers
-#         # We can now calculate the new xk and zk values
-#         xk=yk-(1/L)*g_yk # *yk_m1
-#         zk=(1-q*dk)*zk_m1+q*dk*yk_m1-(dk/L)*g_yk
-#         # Check if it is still necessary to go to the next iteration by
-#         # verifying the tolerance and if the smallest eigenvalue is positive,
-#         # which indicates we are in the domain. 
-#         if norm(yk-yk_m1)<tol && validityfunc(yk,cellsA,gMemSlfN, gMemSlfA, chi_inv_coeff, P)>0
-#             cdn = true
-#             indom = true
-#             print("Terminated because of yk")
-#             print("norm(yk-yk_m1) ", norm(yk-yk_m1), "\n")
-#             print("yk validityfunc ", validityfunc(yk,cellsA,gMemSlfN, gMemSlfA, chi_inv_coeff, P), "\n")
-#         end 
-#         if norm(xk-xk_m1)<tol && validityfunc(xk,cellsA,gMemSlfN, gMemSlfA, chi_inv_coeff, P)>0
-#             cdn = true
-#             indom = true
-#             print("Terminated because of xk")
-#             print("norm(xk-xk_m1) ", norm(xk-xk_m1), "\n")
-#             print("xk validityfunc ", validityfunc(xk,cellsA,gMemSlfN, gMemSlfA, chi_inv_coeff, P), "\n")
-#         end 
-#         if norm(zk-zk_m1)<tol && validityfunc(zk,cellsA,gMemSlfN, gMemSlfA, chi_inv_coeff, P)>0
-#             cdn = true
-#             indom = true  
-#             print("Terminated because of zk")
-#             print("norm(zk-zk_m1) ", norm(zk-zk_m1), "\n")
-#             print("zk validityfunc ", validityfunc(zk,cellsA,gMemSlfN, gMemSlfA, chi_inv_coeff, P), "\n")
-#         end 
-#     end
-# end 
