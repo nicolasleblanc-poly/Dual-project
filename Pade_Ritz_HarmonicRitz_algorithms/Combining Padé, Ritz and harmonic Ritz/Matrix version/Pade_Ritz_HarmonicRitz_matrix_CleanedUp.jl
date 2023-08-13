@@ -30,7 +30,7 @@ function D_matrix(sz)
 end
 
 function eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
-    tol_conv,tol_eigval,tol_bicgstab)
+    tol_conv,tol_eigval,tol_bicgstab, max_nb_it, basis_solver)
     # Matrix 
     A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
     trueEig_A = eigen(A)
@@ -39,27 +39,31 @@ function eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
     print("All of A eigvals ", trueEig_A.values, "\n")
 
     # Solve for extremal eigenvalue 
-    ritz_eigval_restart = jacDavRitz_restart(A,
-        innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
+    # The ritz_nb_it_restart and ritz_nb_it_total_bicgstab_solve variables are not used here.
+    # They are used for the Ritz convergence tests.
+    (ritz_eigval_restart,ritz_nb_it_restart,ritz_nb_it_total_bicgstab_solve) = jacDavRitz_restart(A,
+        innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
     print("ritz_eigval_restart ", ritz_eigval_restart,"\n")
             
     # Solve for eigenvalue closest to 0
-    harmonic_ritz_eigval_restart =
+    # The harmonic_ritz_nb_it_restart and harmonic_ritz_nb_it_total_bicgstab_solve variables are not used here.
+    # They are used for the harmonic Ritz convergence tests.
+    (harmonic_ritz_eigval_restart,harmonic_ritz_nb_it_restart,harmonic_ritz_nb_it_total_bicgstab_solve) =
         jacDavRitzHarm_restart(A,innerLoopDim,restartDim,tol_MGS,
-            tol_conv,tol_eigval,tol_bicgstab)
+            tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
     print("harmonic_ritz_eigval_restart ", harmonic_ritz_eigval_restart,"\n")
 
     return ritz_eigval_restart,harmonic_ritz_eigval_restart
 end 
 
 function eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
-    innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
+    innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
     # Test to see what happens when we shift xi (and therefore 
     # the eigenvalues) by ritz_eigval_restart
     xi_test = xi-ritz_eigval_restart
     # Extreme and closest to 0 eigenvalue solve
     (ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test)=eigval_solve(alpha_0,alpha_1,xi_test,D,P1,innerLoopDim,
-            restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
+            restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
     """
     Calculate the shift in the eigenvalues. This is calcualte to check
         if the smallest extremal eigenvalue is largest than the ritz_eigval_restart,
@@ -70,13 +74,13 @@ function eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
 end 
 
 function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
-    tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it)
+    tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it,basis_solver)
     
     """
     Solve for extremum and closest to 0 eigvals for initial xi value (often 0)
     """
     ritz_eigval_restart,harmonic_ritz_eigval_restart = eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
-        tol_conv,tol_eigval,tol_bicgstab)
+        tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
 
     if ritz_eigval_restart < 0
     """
@@ -97,12 +101,12 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                             Double check that harmonic_ritz_eigval_restart > 0 before breaking 
                             """
                             ritz_eigval_restart,harmonic_ritz_eigval_restart = eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
-                                tol_conv,tol_eigval,tol_bicgstab)
+                                tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
 
                             # Test to see what happens when we shift xi (and therefore 
                             # the eigenvalues) by ritz_eigval_restart            
                             ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
-                                innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
+                                innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
 
                             if abs(ritz_eigval_restart_test) > abs(ritz_eigval_restart)
                                 """
@@ -141,7 +145,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                                 # xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                                 #     tol_conv,tol_eigval,tol_bicgstab,xi,D,P1) 
                                 xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
-                                  tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it)                              
+                                  tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it,basis_solver)                              
                             
                             else 
                             """
@@ -176,7 +180,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                             print("Increased xi 1 \n")
 
                             ritz_eigval_restart,harmonic_ritz_eigval_restart = eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
-                                tol_conv,tol_eigval,tol_bicgstab)            
+                                tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)            
                         end
                     end
                     print("Went through all first loop iterations \n")
@@ -194,7 +198,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                     # Test to see what happens when we shift xi (and therefore 
                     # the eigenvalues) by ritz_eigval_restart
                     ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
-                                innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
+                                innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
 
                     if abs(ritz_eigval_restart_test) > abs(ritz_eigval_restart)
                     """
@@ -233,7 +237,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                         # xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                         #     tol_conv,tol_eigval,tol_bicgstab,xi,D,P1) 
                         xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
-                            tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it)  
+                            tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it,basis_solver)  
                     else 
                     """
                     Essentially if 
@@ -262,7 +266,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                         # Test to see what happens when we shift xi (and therefore 
                         # the eigenvalues) by ritz_eigval_restart
                         ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
-                            innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
+                            innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
 
                         if abs(ritz_eigval_restart_test) > abs(ritz_eigval_restart)
                         """
@@ -301,7 +305,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                             # xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                             #     tol_conv,tol_eigval,tol_bicgstab,xi,D,P1) 
                             xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
-                                tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it)  
+                                tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it,basis_solver)  
                         else 
                         """
                         Essentially if 
@@ -328,7 +332,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                         print("Increased xi 2 \n")
 
                         ritz_eigval_restart,harmonic_ritz_eigval_restart = eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
-                            tol_conv,tol_eigval,tol_bicgstab)
+                            tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
                     end 
                 end
                 print("Went through all second loop iterations \n")
@@ -346,12 +350,12 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                 Double check that harmonic_ritz_eigval_restart > 0 before breaking 
                 """
                     ritz_eigval_restart,harmonic_ritz_eigval_restart = eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
-                        tol_conv,tol_eigval,tol_bicgstab)
+                        tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
                         
                     # Test to see what happens when we shift xi (and therefore 
                     # the eigenvalues) by ritz_eigval_restart
                     ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
-                        innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
+                        innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
 
                     if abs(ritz_eigval_restart_test) > abs(ritz_eigval_restart)
                     """
@@ -389,7 +393,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                         # xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                         #     tol_conv,tol_eigval,tol_bicgstab,xi,D,P1) 
                         xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
-                            tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it)  
+                            tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it,basis_solver)  
                     else 
                     """
                     Essentially if 
@@ -424,7 +428,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                     print("Increased xi 3 \n")
 
                     ritz_eigval_restart,harmonic_ritz_eigval_restart = eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
-                        tol_conv,tol_eigval,tol_bicgstab)            
+                        tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)            
                 end
                 
                 print("Went through all third loop iterations \n")
@@ -452,7 +456,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
             # Test to see what happens when we shift xi (and therefore 
             # the eigenvalues by )
             ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
-                innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
+                innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
 
             if abs(ritz_eigval_restart_test) > abs(ritz_eigval_restart)
             """
@@ -491,7 +495,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                 # xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                 #     tol_conv,tol_eigval,tol_bicgstab,xi,D,P1)  
                 xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
-                    tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it) 
+                    tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it,basis_solver) 
             else 
             """
             Essentially if 
@@ -531,6 +535,7 @@ tol_eigval = 1.0e-9
 tol_bicgstab = 1e-6
 tol_bissection = 1e-4
 max_nb_it = 1000
+basis_solver = "bicgstab"
 
 """
 Generate random matrices and vectors
@@ -554,7 +559,7 @@ Calculation of an apprimate xi value such that all of the eigenvalues of the
     initial matrix A are positive
 """
 xi = xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
-    tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it)
+    tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it,basis_solver)
 print("xi such that smallest eigval of A is positive ", xi, "\n")
 surr_func_xi = surrogate_function(alpha_0,alpha_1,D,P1,xi,s)
 print("surr_func_xi_first_update: ", surr_func_xi, "\n")

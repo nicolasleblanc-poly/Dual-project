@@ -17,14 +17,14 @@ end
 
 # This is a biconjugate gradient program without a preconditioner. 
 # m is the maximum number of iterations
-function ritz_bicgstab_matrix(A, theta, u, b, tol_bicgstab)
+function ritz_bicgstab_matrix(A, theta, u, b, tol_bicgstab, max_nb_it)
 	dim = size(A)[1]
     vk = pk = xk = zeros(ComplexF64,length(b),1)
     # Ax=0 since the initial xk is 0
     r0_hat = rk = b 
     rho_m1 = alpha = omega_k = 1
 	k = 0
-    for k in 1 : 1000
+    for k in 1 : max_nb_it
         rho_k = dot(r0_hat,rk) # conj.(transpose(r0))*r_m1  
         # Bêta calculation
         # First term 
@@ -36,7 +36,7 @@ function ritz_bicgstab_matrix(A, theta, u, b, tol_bicgstab)
         pk = rk .+ beta.*(pk-omega_k.*vk)
         pkPrj = projVec(dim, u, pk)
         vk = projVec(dim, u, A * pkPrj .- (theta .* pkPrj))
-        # alpha calculation
+        # Alpha calculation
         # Bottom term
         bottom_term = dot(r0_hat,vk) # conj.(transpose(r0))*vk
         # Calculation 
@@ -45,7 +45,7 @@ function ritz_bicgstab_matrix(A, theta, u, b, tol_bicgstab)
         s = rk - alpha.*vk
         sPrj = projVec(dim, u, s) 
         t = projVec(dim, u, A * sPrj .- (theta .* sPrj))
-        # omega_k calculation 
+        # Omega_k calculation 
         # Top term 
         ts = dot(t,s) # conj.(transpose(t))*s
         # Bottom term
@@ -55,7 +55,6 @@ function ritz_bicgstab_matrix(A, theta, u, b, tol_bicgstab)
         xk = h + omega_k.*s
         rk = s-omega_k.*t
 		rho_m1 = rho_k
-		# print("norm(rk) ", norm(rk), "\n")
         if norm(rk) < tol_bicgstab
 			return xk,k # k is essentially the number of iterations 
 			# to reach the chosen tolerance
@@ -104,7 +103,8 @@ end
 
 function jacDavRitz_basic(opt,
 		innerLoopDim::Integer,tol_MGS::Float64,tol_conv::Float64,
-			tol_eigval::Float64,tol_bicgstab::Float64)::Tuple{Float64,Float64,
+			tol_eigval::Float64,tol_bicgstab::Float64,max_nb_it::Integer,
+				basis_solver::String)::Tuple{Float64,Float64,
 				Float64}
 	# Memory initialization
 	dims = size(opt) # opt is a square matrix, so dims[1]=dims[2]
@@ -139,9 +139,12 @@ function jacDavRitz_basic(opt,
 	for itr in 2 : innerLoopDim
 		# Jacobi-Davidson direction
 		# basis[:, itr],nb_it = ritz_cg_matrix(opt, theta, ritzVec, resVec, 
-		# tol_bicgstab)		
-		basis[:, itr],nb_it = ritz_bicgstab_matrix(opt, theta, ritzVec, resVec, 
-			tol_bicgstab)
+		# tol_bicgstab)	
+		if basis_solver == "bicgstab"	
+			basis[:, itr],nb_it = ritz_bicgstab_matrix(opt, theta, ritzVec, resVec, 
+				tol_bicgstab, max_nb_it)
+		end 
+
 		nb_it_total_bicgstab_solve += nb_it
 
 		# Orthogonalize
@@ -179,13 +182,14 @@ function jacDavRitz_basic(opt,
 	end
 	print("Didn't converge off tolerance for basic program. 
 		Atteined max set number of iterations \n")
-	return (real(theta),nb_it_vals_basic,nb_it_total_bicgstab_solve) # ,ritzVec
+	return (real(theta),nb_it_vals_basic,nb_it_total_bicgstab_solve) 
 end
 
 function jacDavRitz_basic_for_restart(opt, 
 			innerLoopDim::Integer,tol_MGS::Float64,
 				tol_conv::Float64,tol_eigval::Float64,
-					tol_bicgstab::Float64)		
+					tol_bicgstab::Float64, max_nb_it::Integer,
+						basis_solver::String)		
 	# Memory initialization
 	dims = size(opt) # opt is a square matrix, so dims[1]=dims[2]
 	vecDim = dims[1]
@@ -227,8 +231,10 @@ function jacDavRitz_basic_for_restart(opt,
 		# Jacobi-Davidson direction
 		# basis[:, itr],nb_it = ritz_cg_matrix(opt, theta, ritzVec, resVec, 
 		# 	tol_bicgstab)
-		basis[:, itr],nb_it = ritz_bicgstab_matrix(opt, theta, ritzVec, resVec, 
-			tol_bicgstab)
+		if basis_solver == "bicgstab"
+			basis[:, itr],nb_it = ritz_bicgstab_matrix(opt, theta, ritzVec, resVec, 
+				tol_bicgstab, max_nb_it)
+		end
 		nb_it_total_bicgstab_solve += nb_it
 		# Orthogonalize
 		gramSchmidt!(basis, itr, tol_MGS)
@@ -279,7 +285,8 @@ end
 
 function jacDavRitz_restart(opt,innerLoopDim::Integer,
 		restartDim::Integer,tol_MGS::Float64,tol_conv::Float64,
-			tol_eigval::Float64,tol_bicgstab::Float64)::Float64 # ::Tuple{Float64,Float64,Float64} 
+			tol_eigval::Float64,tol_bicgstab::Float64,max_nb_it::Integer,
+				basis_solver::String)::Float64 # ::Tuple{Float64,Float64,Float64} 
 
 	dims = size(opt) # opt is a square matrix, so dims[1]=dims[2]
 	vecDim = dims[1]
@@ -288,23 +295,15 @@ function jacDavRitz_restart(opt,innerLoopDim::Integer,
 
 	eigenvectors = zeros(ComplexF64, innerLoopDim, innerLoopDim)
 	eigenvalues = zeros(ComplexF64, innerLoopDim)
-	# eigenvectors = Array{ComplexF64}(undef, innerLoopDim,innerLoopDim)
-	# eigenvalues = Vector{ComplexF64}(undef, innerLoopDim)
 	
 	restart_outVec = zeros(ComplexF64, vecDim)
 	restart_resVec = zeros(ComplexF64, vecDim)
 	restart_ritzVec = zeros(ComplexF64, vecDim)
 	restart_basis = zeros(ComplexF64, vecDim, restartDim)
 	restart_hesse = zeros(ComplexF64, vecDim, restartDim)
-	# restart_outVec = Vector{ComplexF64}(undef, vecDim)
-	# restart_resVec = Vector{ComplexF64}(undef, vecDim)
-	# restart_ritzVec = Vector{ComplexF64}(undef, vecDim)
-	# restart_basis = Array{ComplexF64}(undef, vecDim, restartDim)
-	# restart_hesse = Array{ComplexF64}(undef, vecDim, restartDim)
 	restart_theta = 0 
 	# Change of basis matrix
 	u_matrix = zeros(ComplexF64, innerLoopDim, restartDim)
-	# u_matrix = Array{ComplexF64}(undef, innerLoopDim, restartDim)
 
 	# Memory initialization
 	outVec = Vector{ComplexF64}(undef, vecDim)
@@ -332,18 +331,17 @@ function jacDavRitz_restart(opt,innerLoopDim::Integer,
 	nb_it_eigval_conv = 0.0
 	nb_it_total_bicgstab_solve = 0.0
 
-	for it in 1 : 1000
+	for it in 1 : max_nb_it
 		eigenvalues = Vector{ComplexF64}(undef, innerLoopDim)
 		# Inner loop
 		if it == 1
 			theta,basis,hesse,outVec,ritzVec,resVec,eigenvalues,
 				eigenvectors,nb_it_vals_basic_for_restart,
 					nb_it_bicgstab_solve = jacDavRitz_basic_for_restart(opt, 
-			innerLoopDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
+						innerLoopDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab,max_nb_it,
+							basis_solver)
 			nb_it_restart += nb_it_vals_basic_for_restart
 			nb_it_total_bicgstab_solve += nb_it_bicgstab_solve
-			# print("basis after basic for restart ", basis, "\n")
-			# print("eigenvectors from basic for restart ", eigenvectors, "\n")
 		else # Essentially for it > 1
 			outVec = Vector{ComplexF64}(undef, vecDim)
 			outVec = restart_outVec
@@ -354,16 +352,11 @@ function jacDavRitz_restart(opt,innerLoopDim::Integer,
 
 			eigenvectors = zeros(ComplexF64, innerLoopDim, innerLoopDim)
 			eigenvalues = zeros(ComplexF64, innerLoopDim)
-			# eigenvectors = Array{ComplexF64}(undef, innerLoopDim,innerLoopDim)
-			# eigenvalues = Vector{ComplexF64}(undef, innerLoopDim)
 
 			basis = zeros(ComplexF64, vecDim, vecDim)
-			# basis = Array{ComplexF64}(undef, vecDim, vecDim)
 			basis[:,1:restartDim] = restart_basis
-			# print("basis when restarting ", basis, "\n")
 
 			hesse = zeros(ComplexF64, vecDim, vecDim)
-			# hesse = Array{ComplexF64}(undef, vecDim, vecDim)
 			hesse[1:restartDim,1:restartDim] = restart_hesse
 
 			theta = restart_theta
@@ -372,8 +365,11 @@ function jacDavRitz_restart(opt,innerLoopDim::Integer,
 				# Jacobi-Davidson direction
 				# basis[:, itr],nb_it = ritz_cg_matrix(opt, theta, ritzVec, resVec, 
 				# 	tol_bicgstab)
-				basis[:, itr],nb_it = ritz_bicgstab_matrix(opt, theta, ritzVec, resVec, 
-					tol_bicgstab)
+				if basis_solver == "bicgstab"
+					basis[:, itr],nb_it = ritz_bicgstab_matrix(opt, theta, ritzVec, resVec, 
+						tol_bicgstab, max_nb_it)
+				end
+
 				nb_it_total_bicgstab_solve += nb_it
 
 				# Orthogonalize
@@ -389,8 +385,6 @@ function jacDavRitz_restart(opt,innerLoopDim::Integer,
 
 				eigenvectors[1:itr,1:itr] = eigSys.vectors
 				eigenvalues[1:itr] = eigSys.values
-
-				# print("eigenvectors[1:itr,1:itr] ", eigenvectors[1:itr,1:itr],"\n")
 
 				# Update Ritz vector
 				if abs.(eigSys.values[end]) > abs.(eigSys.values[1])
@@ -409,15 +403,14 @@ function jacDavRitz_restart(opt,innerLoopDim::Integer,
 				if norm(resVec) < tol_conv
 					print("Basic algo converged off resVec tolerance \n")
 					print("Converged in ", itr, "iterations \n")
-					return real(theta) # ,nb_it_restart,nb_it_total_bicgstab_solve
+					return real(theta),nb_it_restart,nb_it_total_bicgstab_solve
 				end
 				# Eigenvalue tolerance check
 				if abs((real(theta) - real(previous_eigval))/real(previous_eigval)) < tol_eigval
 					if nb_it_eigval_conv == 5
 						print("Restart algo converged off eigval tolerance \n")
 						print("Converged in ", itr, "iterations \n")
-						return real(theta) # ,nb_it_restart,nb_it_total_bicgstab_solve
-						# ,ritzVec
+						return real(theta),nb_it_restart,nb_it_total_bicgstab_solve
 					end 
 					nb_it_eigval_conv += 1
 				end
@@ -438,10 +431,6 @@ function jacDavRitz_restart(opt,innerLoopDim::Integer,
 		Create change of basis matrix: u_matrix
 		# Create trgBasis and srcBasis for restart
 		"""
-
-		# print("eigenvalues ", eigenvalues, "\n")
-		# print("eigenvectors before restart ", eigenvectors, "\n")
-		# print("eigenvectors[:, end] ", eigenvectors[:, end], "\n")
 
 		for i = 1:restartDim
 			# Creation of new trgBasis and srcBasis matrices 
@@ -471,13 +460,13 @@ function jacDavRitz_restart(opt,innerLoopDim::Integer,
 		restart_outVec = outVec
 		restart_ritzVec = ritzVec
 		restart_resVec = resVec
-		# print("restart_basis ", restart_basis, "\n")
 	end
 	print("Didn't converge off tolerance for basic program. 
 		Atteined max set number of iterations \n")
-	return real(theta) # ,nb_it_restart,nb_it_total_bicgstab_solve) # ritzVec,
+	return real(theta),nb_it_restart,nb_it_total_bicgstab_solve
 end
 
+# Old test code
 # sz = 100
 # tol_MGS = 1e-9
 # tol_conv = 1e-6

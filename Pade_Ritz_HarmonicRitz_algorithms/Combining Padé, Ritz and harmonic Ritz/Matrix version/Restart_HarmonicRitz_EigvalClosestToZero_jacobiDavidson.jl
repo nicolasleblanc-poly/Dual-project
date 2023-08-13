@@ -12,7 +12,7 @@ using LinearAlgebra, Random, Base.Threads, Plots
 
 function jacDavRitzHarm_basic(opt,innerLoopDim::Integer,
 	tol_MGS::Float64,tol_conv::Float64,tol_eigval::Float64,
-		tol_bicgstab::Float64)::Tuple{Float64,Float64,Float64}
+		tol_bicgstab::Float64,max_nb_it::Integer,basis_solver::String)::Tuple{Float64,Float64,Float64}
 
 	# Memory initialization
 	dims = size(opt)
@@ -59,9 +59,20 @@ function jacDavRitzHarm_basic(opt,innerLoopDim::Integer,
 	for itr in 2 : innerLoopDim  # Need to determine when this for loops stops 
 		# Depending on how much memory the laptop can take before crashing.
 		prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
+
 		# Calculate Jacobi-Davidson direction
-		srcBasis[:, itr],nb_it = harm_ritz_bicgstab_matrix(opt, theta, hRitzTrg,
-				hRitzSrc, prjCoeff, resVec, tol_bicgstab)
+		if basis_solver == "bicgstab"
+			srcBasis[:, itr],nb_it = harm_ritz_bicgstab_matrix(opt, theta, hRitzTrg,
+				hRitzSrc, prjCoeff, resVec, tol_bicgstab, max_nb_it)
+		elseif basis_solver == "direct solve"
+			uk_tilde = opt\hRitzTrg
+			rk_tilde = opt\hRitzSrc
+			epsilon = (adjoint(hRitzTrg)*uk_tilde)/(adjoint(hRitzSrc)*rk_tilde)
+			srcBasis[:, itr] = epsilon*uk_tilde-rk_tilde
+		else
+			print("You didn't enter a valid basis solver. Please pick bicgstab or direct solve")
+		end
+
 		nb_it_total_bicgstab_solve += nb_it
 
 		trgBasis[:, itr] = opt * srcBasis[:, itr]
@@ -123,7 +134,8 @@ end
 
 function jacDavRitzHarm_basic_for_restart(opt, 
 	innerLoopDim::Integer,tol_MGS::Float64,tol_conv::Float64,
-		tol_eigval::Float64,tol_bicgstab::Float64)
+		tol_eigval::Float64,tol_bicgstab::Float64,max_nb_it::Integer,
+			basis_solver::String)
 
 	dims = size(opt)
 	vecDim = dims[1]
@@ -172,9 +184,20 @@ function jacDavRitzHarm_basic_for_restart(opt,
 	for itr in 2 : innerLoopDim  # Need to determine when this for loops stops 
 		# Depending on how much memory the laptop can take before crashing.
 		prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
+
 		# Calculate Jacobi-Davidson direction
-		srcBasis[:, itr],nb_it = harm_ritz_bicgstab_matrix(opt, theta, hRitzTrg,
-				hRitzSrc, prjCoeff, resVec, tol_bicgstab)
+		if basis_solver == "bicgstab"
+			srcBasis[:, itr],nb_it = harm_ritz_bicgstab_matrix(opt, theta, hRitzTrg,
+				hRitzSrc, prjCoeff, resVec, tol_bicgstab, max_nb_it)
+		elseif basis_solver == "direct solve"
+			uk_tilde = opt\hRitzTrg
+			rk_tilde = opt\hRitzSrc
+			epsilon = (adjoint(hRitzTrg)*uk_tilde)/(adjoint(hRitzSrc)*rk_tilde)
+			srcBasis[:, itr] = epsilon*uk_tilde-rk_tilde
+		else
+			print("You didn't enter a valid basis solver. Please pick bicgstab or direct solve")
+		end 
+
 		nb_it_total_bicgstab_solve += nb_it
 		
 		trgBasis[:, itr] = opt * srcBasis[:, itr]
@@ -246,7 +269,8 @@ end
 
 function jacDavRitzHarm_restart(opt,innerLoopDim::Integer,
 	restartDim::Integer,tol_MGS::Float64,
-		tol_conv::Float64,tol_eigval::Float64,tol_bicgstab::Float64)::Float64 # Tuple{Float64, Float64,Float64}
+		tol_conv::Float64,tol_eigval::Float64,tol_bicgstab::Float64,
+			max_nb_it::Integer,basis_solver::String)::Float64 # Tuple{Float64, Float64,Float64}
 	
 	# Memory initialization
 	dims = size(opt) # opt is a square matrix, so dims[1]=dims[2]
@@ -303,14 +327,14 @@ function jacDavRitzHarm_restart(opt,innerLoopDim::Integer,
 	
 	# Code with restart
 	# Outer loop
-	for it in 1: 1000 # restartDim # Need to think this over 
+	for it in 1: max_nb_it # restartDim # Need to think this over 
 		eigenvalues = Vector{ComplexF64}(undef, innerLoopDim)
 		# Inner loop
 
 		if it == 1
 			theta,srcBasis,trgBasis,kMat,resVec,hRitzSrc,hRitzTrg,eigenvalues,eigenvectors,nb_it_basic_for_restart,nb_it_bicgstab_solve=
 				jacDavRitzHarm_basic_for_restart(opt,innerLoopDim,tol_MGS,
-					tol_conv,tol_eigval,tol_bicgstab)
+					tol_conv,tol_eigval,tol_bicgstab,max_nb_it,basis_solver)
 			nb_it_restart += nb_it_basic_for_restart
 			nb_it_total_bicgstab_solve += nb_it_bicgstab_solve
 		
@@ -343,11 +367,22 @@ function jacDavRitzHarm_restart(opt,innerLoopDim::Integer,
 			for itr in restartDim+1: innerLoopDim # -restartDim # Need to determine when this for loops stops 
 				# Depending on how much memory the laptop can take before crashing.
 				prjCoeff = BLAS.dotc(vecDim, hRitzTrg, 1, hRitzSrc, 1)
+
 				# Calculate Jacobi-Davidson direction
 				# srcBasis[:, itr],nb_it = harm_ritz_cg_matrix(opt, theta, hRitzTrg,
 				# 	hRitzSrc, prjCoeff, resVec, tol_bicgstab)
-				srcBasis[:, itr],nb_it = harm_ritz_bicgstab_matrix(opt, theta, hRitzTrg,
-						hRitzSrc, prjCoeff, resVec, tol_bicgstab)
+				if basis_solver == "bicgstab"
+					srcBasis[:, itr],nb_it = harm_ritz_bicgstab_matrix(opt, theta, hRitzTrg,
+						hRitzSrc, prjCoeff, resVec, tol_bicgstab, max_nb_it)
+				elseif basis_solver == "direct solve"
+					uk_tilde = opt\hRitzTrg
+					rk_tilde = opt\hRitzSrc
+					epsilon = (adjoint(hRitzTrg)*uk_tilde)/(adjoint(hRitzSrc)*rk_tilde)
+					srcBasis[:, itr] = epsilon*uk_tilde-rk_tilde
+				else
+					print("You didn't enter a valid basis solver. Please pick bicgstab or direct solve")
+				end 
+
 				nb_it_total_bicgstab_solve += nb_it
 
 				trgBasis[:, itr] = opt * srcBasis[:, itr]
@@ -399,14 +434,14 @@ function jacDavRitzHarm_restart(opt,innerLoopDim::Integer,
 				if norm(resVec) < tol_conv
 					print("Restart algo converged off resVec tolerance \n")
 					print("Converged in ", itr, "iterations \n")
-					return real(theta) # ,nb_it_restart,nb_it_total_bicgstab_solve
+					return real(theta),nb_it_restart,nb_it_total_bicgstab_solve
 				end
 				# Eigenvalue tolerance check
 				if abs((real(theta) - real(previous_eigval))/real(previous_eigval)) < tol_eigval
 					if nb_it_eigval_conv == 5
 						print("Converged in ", itr, "iterations \n")
 						print("Restart algo converged off eigval tolerance \n")
-						return real(theta) # ,nb_it_restart,nb_it_total_bicgstab_solve
+						return real(theta),nb_it_restart,nb_it_total_bicgstab_solve
 					end 
 					nb_it_eigval_conv += 1
 				end
@@ -465,7 +500,7 @@ function jacDavRitzHarm_restart(opt,innerLoopDim::Integer,
 	end 
 	print("Didn't converge off tolerance for restart program. 
 		Atteined max set number of iterations \n")
-	return real(theta) 
+	return real(theta),nb_it_restart,nb_it_total_bicgstab_solve
 end
 
 # Perform Gram-Schmidt on target basis, adjusting source basis accordingly
@@ -530,13 +565,13 @@ end
 end
 # This is a biconjugate gradient program without a preconditioner.
 # m is the maximum number of iterations
-function harm_ritz_bicgstab_matrix(A, theta, hTrg, hSrc, prjC, b, tol_bicgstab)
+function harm_ritz_bicgstab_matrix(A, theta, hTrg, hSrc, prjC, b, tol_bicgstab, max_nb_it)
 	dim = size(A)[1]
     vk = pk = xk = zeros(ComplexF64,length(b),1)
     r0_hat = rk = b
     rho_m1 = alpha = omega_k = 1
 	k = 0 
-    for k in 1 : 1000
+    for k in 1 : max_nb_it
         rho_k = dot(r0_hat,rk) # conj.(transpose(r0))*r_m1
         # Bêta calculation
         # First term
