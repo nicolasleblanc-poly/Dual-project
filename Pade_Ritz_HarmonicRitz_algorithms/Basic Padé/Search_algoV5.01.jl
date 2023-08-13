@@ -1,3 +1,22 @@
+"""
+This module is the original Padé approximate code. This code has many 
+problems that I (Nicolas) partially fixed in the Nic_BasicPadeRootSolver.jl file. 
+The problems with the code in this current file is that the 
+Padé rebuild function is inside the Padé approximate construction function. The 
+Padé convergence function also doesn't work. In my version of this code, I 
+fixed the convergence condition. In my more advanced versions of the code
+where I use matrices and the Green operator, I separated the Padé approximate
+and the rebuild function. I also fixed a bunch of other stuff not mentionned 
+here (see the Latex document). 
+
+The general idea of this Padé approximate root solver algorithm is to find the 
+last crossing of a function.
+
+Neil deGrasse  Tyson 
+
+Author: Félix Bergeron 
+"""
+
 using Plots
 using Distributed
 

@@ -1,6 +1,6 @@
 module Pade_Ritz_HarmonicRitz_matrix
 using LinearAlgebra,Random, Base.Threads,Plots,
-    Restart_Ritz_jacobiDavidson,
+    .Restart_Ritz_jacobiDavidson,
         Restart_HarmonicRitz_EigvalClosestToZero_jacobiDavidson,
             PadeForRitz_Code, Peaks
 
@@ -55,15 +55,17 @@ end
 function eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
     innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
     # Test to see what happens when we shift xi (and therefore 
-    # the eigenvalues by )
+    # the eigenvalues) by ritz_eigval_restart
     xi_test = xi-ritz_eigval_restart
     # Extreme and closest to 0 eigenvalue solve
     (ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test)=eigval_solve(alpha_0,alpha_1,xi_test,D,P1,innerLoopDim,
             restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
-    # Calculate the shift in the eigenvalues. This is calcualte to check
-    # if the smallest extremal eigenvalue is largest than the ritz_eigval_restart,
-    # which would indicate the is a unknown negative eigenvalue. 
-    # eigval_shift = harmonic_ritz_eigval_restart_test-ritz_eigval_restart_test
+    """
+    Calculate the shift in the eigenvalues. This is calcualte to check
+        if the smallest extremal eigenvalue is largest than the ritz_eigval_restart,
+        which would indicate the is a unknown negative eigenvalue. 
+        eigval_shift = harmonic_ritz_eigval_restart_test-ritz_eigval_restart_test
+    """
     return ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test
 end 
 
@@ -76,7 +78,6 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
     ritz_eigval_restart,harmonic_ritz_eigval_restart = eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
         tol_conv,tol_eigval,tol_bicgstab)
 
-    # for iterations = 1:10
     if ritz_eigval_restart < 0
     """
     1. We want to increase xi until ritz_eigval_restart > 0
@@ -99,7 +100,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                                 tol_conv,tol_eigval,tol_bicgstab)
 
                             # Test to see what happens when we shift xi (and therefore 
-                            # the eigenvalues by )                            
+                            # the eigenvalues) by ritz_eigval_restart            
                             ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
                                 innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
 
@@ -154,8 +155,8 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                                 print("Converged off eigshift 1 \n")
                                 print("ritz_eigval_restart ", ritz_eigval_restart,"\n")
                                 print("harmonic_ritz_eigval_restart ", harmonic_ritz_eigval_restart,"\n")
-                                # Matrix
                                 print("xi ", xi, "\n")
+                                # Matrix
                                 A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
                                 trueEig_A = eigen(A)
                                 A_smallest_eigval = trueEig_A.values[1]
@@ -191,7 +192,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                     print("All of A eigvals ", trueEig_A.values, "\n")
                 
                     # Test to see what happens when we shift xi (and therefore 
-                    # the eigenvalues by )
+                    # the eigenvalues) by ritz_eigval_restart
                     ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
                                 innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
 
@@ -245,8 +246,8 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                         print("Converged off eigshift 2 \n")
                         print("ritz_eigval_restart ", ritz_eigval_restart,"\n")
                         print("harmonic_ritz_eigval_restart ", harmonic_ritz_eigval_restart,"\n")
-                        # Matrix
                         print("xi ", xi, "\n")
+                        # Matrix
                         A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
                         trueEig_A = eigen(A)
                         A_smallest_eigval = trueEig_A.values[1]
@@ -258,10 +259,8 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
             else # Essentially if ritz_eigval_restart < 0
                 for j = 1:max_nb_it
                     if ritz_eigval_restart > 0
-                        # break
-
                         # Test to see what happens when we shift xi (and therefore 
-                        # the eigenvalues by )
+                        # the eigenvalues) by ritz_eigval_restart
                         ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
                             innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
 
@@ -315,8 +314,8 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                             print("Converged off eigshift 3 \n")
                             print("ritz_eigval_restart ", ritz_eigval_restart,"\n")
                             print("harmonic_ritz_eigval_restart ", harmonic_ritz_eigval_restart,"\n")
-                            # Matrix
                             print("xi ", xi, "\n")
+                            # Matrix
                             A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
                             trueEig_A = eigen(A)
                             A_smallest_eigval = trueEig_A.values[1]
@@ -324,8 +323,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                             return xi 
                         end
                     else # ritz_eigval_restart < 0
-                        # Increase the xi value by 10 (arbitrary value)
-                        # xi += 10
+                        # Increase the xi value by ritz_eigval_restart
                         xi += abs(ritz_eigval_restart)
                         print("Increased xi 2 \n")
 
@@ -351,7 +349,7 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                         tol_conv,tol_eigval,tol_bicgstab)
                         
                     # Test to see what happens when we shift xi (and therefore 
-                    # the eigenvalues by )
+                    # the eigenvalues) by ritz_eigval_restart
                     ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
                         innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
 
@@ -404,8 +402,8 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                         print("Converged off eigshift 2 \n")
                         print("ritz_eigval_restart ", ritz_eigval_restart,"\n")
                         print("harmonic_ritz_eigval_restart ", harmonic_ritz_eigval_restart,"\n")
-                        # Matrix
                         print("xi ", xi, "\n")
+                        # Matrix
                         A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
                         trueEig_A = eigen(A)
                         A_smallest_eigval = trueEig_A.values[1]
@@ -423,90 +421,12 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                     # seeing that ritz_eigval_restart > 0
                     xi += abs(harmonic_ritz_eigval_restart)
 
-                    print("Increased xi 1 \n")
+                    print("Increased xi 3 \n")
 
                     ritz_eigval_restart,harmonic_ritz_eigval_restart = eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
                         tol_conv,tol_eigval,tol_bicgstab)            
                 end
-                # else # Essentially if harmonic_ritz_eigval_restart < 0
-                #     for j = 1:max_nb_it
-                #         if ritz_eigval_restart > 0
-                #             # break
-
-                #             # Test to see what happens when we shift xi (and therefore 
-                #             # the eigenvalues by )
-                #             ritz_eigval_restart_test,harmonic_ritz_eigval_restart_test = eigval_test_calcs(alpha_0,alpha_1,xi,ritz_eigval_restart,D,P1,
-                #                 innerLoopDim,restartDim,tol_MGS,tol_conv,tol_eigval,tol_bicgstab)
-
-                #             if abs(ritz_eigval_restart_test) > abs(ritz_eigval_restart)
-                #             """
-                #             This means that there was a negative eigenvalue that we 
-                #             didn't know about (aka it wasn't the extreme eigval or the
-                #             eigval closest to 0) since we get a value after the 
-                #             substraction that is largest than the value we substracted
-                #             by. Its like if we had a negative eigval we didn't know about
-                #             that is equal to -5, harmonic_ritz_eigval_restart = 1 and 
-                #             ritz_eigval_restart = 10. The substraction gives -15, which 
-                #             is bigger in absolute value than 10. If we didn't have any 
-                #             negative eigvals and 1 was the smallest eigal, we would get 
-                #             -9, which is smaller than 10 in absolute value. 
-                #             """
-                #                 # Matrix
-                #                 A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
-                #                 trueEig_A = eigen(A)
-                #                 A_smallest_eigval = trueEig_A.values[1]
-                #                 print("A_smallest_eigval with old xi ", A_smallest_eigval, "\n")
-                #                 print("All of A eigvals with old xi ", trueEig_A.values, "\n")
-                #                 print("old xi ", xi, "\n")
-                #                 print("There was a negative eigenvalue we didn't know about 5 \n")
-                #                 # Calculate the unknown negative eigenvalue 
-                #                 unk_neg_eigval = ritz_eigval_restart_test+ritz_eigval_restart
-                #                 print("unk_neg_eigval ", unk_neg_eigval, "\n")
-                #                 # Shift up xi and the eigenvalues by the unknown negative eigenvalue
-                #                 xi += abs(unk_neg_eigval)
-                #                 print("new xi ", xi, "\n")
-                #                 # Matrix
-                #                 A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
-                #                 trueEig_A = eigen(A)
-                #                 A_smallest_eigval = trueEig_A.values[1]
-                #                 print("A_smallest_eigval with new xi ", A_smallest_eigval, "\n")
-                #                 print("All of A eigvals with new xi ", trueEig_A.values, "\n")
-                #                 # Restart the function with the new xi value 
-                #                 # xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
-                #                 #     tol_conv,tol_eigval,tol_bicgstab,xi,D,P1)  
-                #                 xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
-                #                     tol_conv,tol_eigval,tol_bicgstab,xi,D,P1,max_nb_it) 
-                #             else 
-                #             """
-                #             Essentially if 
-                #                 abs(ritz_eigval_restart_test) < abs(ritz_eigval_restart).
-                #             This means that there wasn't a negative eigval we didn't 
-                #             know about since we pretty much just calculated 
-                #             harmonic_ritz_eigval_restart-ritz_eigval_restart. See above
-                #             for more reasonning. 
-                #             """
-                #                 print("Converged off eigshift 3 \n")
-                #                 print("ritz_eigval_restart ", ritz_eigval_restart,"\n")
-                #                 print("harmonic_ritz_eigval_restart ", harmonic_ritz_eigval_restart,"\n")
-                #                 # Matrix
-                #                 print("xi ", xi, "\n")
-                #                 A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
-                #                 trueEig_A = eigen(A)
-                #                 A_smallest_eigval = trueEig_A.values[1]
-                #                 print("A_smallest_eigval ", A_smallest_eigval, "\n")
-                #                 return xi 
-                #             end
-                #         else # ritz_eigval_restart < 0
-                #             # Increase the xi value by 10 (arbitrary value)
-                #             # xi += 10
-                #             xi += abs(ritz_eigval_restart)
-                #             print("Increased xi 3 \n")
-
-                #             ritz_eigval_restart,harmonic_ritz_eigval_restart = eigval_solve(alpha_0,alpha_1,xi,D,P1,innerLoopDim,restartDim,tol_MGS,
-                #                 tol_conv,tol_eigval,tol_bicgstab)
-                #         end 
-                #     end
-                # end
+                
                 print("Went through all third loop iterations \n")
                 # Matrix
                 A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
@@ -584,8 +504,8 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
                 print("Converged off eigshift 4 \n")
                 print("ritz_eigval_restart ", ritz_eigval_restart,"\n")
                 print("harmonic_ritz_eigval_restart ", harmonic_ritz_eigval_restart,"\n")
-                # Matrix
                 print("xi ", xi, "\n")
+                # Matrix
                 A = (alpha_1+xi)*I + alpha_0*inv(adjoint(D))*P1*inv(D)
                 trueEig_A = eigen(A)
                 A_smallest_eigval = trueEig_A.values[1]
@@ -594,9 +514,6 @@ function xi_update(alpha_0,alpha_1,innerLoopDim,restartDim,tol_MGS,
             end
         end
     end
-    # end
-    # print("Didn't converge. Went through all possible iterations of xi_update. \n ")
-    # return xi
 end
 
 """"

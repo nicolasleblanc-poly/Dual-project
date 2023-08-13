@@ -33,16 +33,16 @@ function plot_surrogate_func(alpha_0,alpha_1,D,P1,max_val,s,ind)
     ylabel!("Surrogate function")
 
     if ind == 1
-        savefig("/home/nic-molesky_lab/Pad---Ritz-and-Harmonic-Ritz-duality-checker/Pade_Ritz_HarmonicRitz_algorithms/Combining Padé, Ritz and harmonic Ritz/Matrix version/Graphs/zoomed1_in_graph_surr_func_vs_xi.png")
+        savefig("Pade_Ritz_HarmonicRitz_algorithms/Combining Padé, Ritz and harmonic Ritz/Matrix version/Graphs/zoomed1_in_graph_surr_func_vs_xi.png")
     elseif ind == 2
-        savefig("/home/nic-molesky_lab/Pad---Ritz-and-Harmonic-Ritz-duality-checker/Pade_Ritz_HarmonicRitz_algorithms/Combining Padé, Ritz and harmonic Ritz/Matrix version/Graphs/zoomed2_in_graph_surr_func_vs_xi.png")
+        savefig("Pade_Ritz_HarmonicRitz_algorithms/Combining Padé, Ritz and harmonic Ritz/Matrix version/Graphs/zoomed2_in_graph_surr_func_vs_xi.png")
     end
 
     pks, vals = findmaxima(-surr_func_vals)
     print("pks ", pks, "\n")
     print("vals ", vals, "\n")
     plotpeaks(xi_vals, surr_func_vals, peaks=pks,  widths=true)  # prominences=true, # see above plot for result
-    savefig("/home/nic-molesky_lab/Pad---Ritz-and-Harmonic-Ritz-duality-checker/Pade_Ritz_HarmonicRitz_algorithms/Combining Padé, Ritz and harmonic Ritz/Matrix version/Graphs/minimas_graph_surr_func_vs_xi.png")
+    savefig("Pade_Ritz_HarmonicRitz_algorithms/Combining Padé, Ritz and harmonic Ritz/Matrix version/Graphs/minimas_graph_surr_func_vs_xi.png")
 
     xi_val_peaks = []
     for index in pks 

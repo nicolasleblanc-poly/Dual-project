@@ -1,8 +1,16 @@
-using Plots
-using Distributed
+"""
+This module is the working version of the original Padé approximate code. 
+There's still some problems in the code in this current file and things are 
+still not written optimialy but I just wanted to have a working version of
+the original basic Padé approximate code to build off of. 
 
-#####################################################################
-#The function itself
+The general idea of this Padé approximate root solver code is to find the 
+last crossing of a function.
+
+Author: Nicolas Leblanc
+"""
+
+using Plots, Distributed
 
 A_0 = [-4.202369178258174 0.23656026179610068 0.9967817753194017 1.3621812143410215 0.7730591438014547 0.6795174235124107 1.201085140547982 1.4868076811790276; 0.23656026179610068 7.798410364498693 1.1887914375583606 0.8319234390137311 0.6993492068510417 1.3827615231298125 0.700451511387506 0.7056215986781617; 0.9967817753194017 1.1887914375583606 0.42299075325249924 0.29486161901242103 0.19378176034018868 1.000139458265159 0.9244827781178556 1.1508145100468172; 1.3621812143410215 0.8319234390137311 0.29486161901242103 0.01708738384810582 1.1788883010405404 0.3440989888794501 0.8452830180744944 1.031421035373452; 0.7730591438014547 0.6993492068510417 0.19378176034018868 1.1788883010405404 7.7279086959771925 0.5514991511284997 1.2655895299014635 0.4587696224505302; 0.6795174235124107 1.3827615231298125 1.000139458265159 0.3440989888794501 0.5514991511284997 -4.801460017525201 1.5136937331663745 1.5641726026980587; 1.201085140547982 0.700451511387506 0.9244827781178556 0.8452830180744944 1.2655895299014635 1.5136937331663745 -5.772356595393507 0.8863604625475946; 1.4868076811790276 0.7056215986781617 1.1508145100468172 1.031421035373452 0.4587696224505302 1.5641726026980587 0.8863604625475946 3.8057109577380377]  
 A_1 = [2.868579595078885 2.0017974394942346 2.74322349984502 1.5384739564067065 1.2049901854320149 0.7844614927869878 0.5116454465287238 0.3954765714958245; 2.0017974394942346 2.1989032020338324 2.2633740613445834 1.860144380106243 1.5067979872002306 1.0776467254653175 0.49796391833968345 0.07010833916308676; 2.74322349984502 2.2633740613445834 3.481910164372317 2.2196452124024675 1.8506900180327013 1.308331972989803 0.9886660735458807 0.8016426250970934; 1.5384739564067065 1.860144380106243 2.2196452124024675 2.365509026271365 2.0482719098769335 1.1736822169267422 0.8666751085840902 0.6206594844699613; 1.2049901854320149 1.5067979872002306 1.8506900180327013 2.0482719098769335 2.5849404532937563 0.8654543936056173 1.1260900464597272 0.8144678880412133; 0.7844614927869878 1.0776467254653175 1.308331972989803 1.1736822169267422 0.8654543936056173 1.2779957150876138 0.6283583221225173 0.09773593867003194; 0.5116454465287238 0.49796391833968345 0.9886660735458807 0.8666751085840902 1.1260900464597272 0.6283583221225173 0.9344991358049112 0.616241342068419; 0.3954765714958245 0.07010833916308676 0.8016426250970934 0.6206594844699613 0.8144678880412133 0.09773593867003194 0.616241342068419 1.0923134840223656]
@@ -25,8 +33,12 @@ py = map(f, px)
 ymax = 50
 ymin = -200
 lbound = 0
-plot(px, py, ylim=(ymin,ymax), legend = false)
-savefig("/home/nic-molesky_lab/Pad---Ritz-and-Harmonic-Ritz-duality-checker/Pade_Ritz_HarmonicRitz_algorithms/function_graph_June15.png")
+"""
+Code to plot a graph of the function that we are trying to estimate the last root of 
+using Padé.
+"""
+# plot(px, py, ylim=(ymin,ymax), legend = false)
+# savefig("Pade_Ritz_HarmonicRitz_algorithms\Basic Padé\function_graph_June15.png")
 
 
 
@@ -65,7 +77,7 @@ end
 # rebuild_with : evaluates the constructed Padé at the x values in this list
 
 function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
-    #Padé approximant algorithm
+    # Padé approximant algorithm
     x = x
     r = y
     l =  length(x)
@@ -75,18 +87,18 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
     S= zeros(l)
     M= zeros(l)
 
-    for i in range(1,l) #first loop 
+    for i in range(1,l) # First loop 
         R[i] = r[i]
         X[i] = x[i]
     end
 
-    for j in range(1,l)#second loop
+    for j in range(1,l) # Second loop
         P[j] = R[j]
         for s in range(j+1, l)
             S[s] = R[j]
             R[s] = R[s] - S[s]
             if R[s] == 0
-                #println("Huston, we have a problem, ABORT.")
+                #println("Houston, we have a problem, ABORT.")
             else
                 M[s] = X[s] - X[j]
                 R[s] = M[s]/R[s]
@@ -99,7 +111,7 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
         end
     end
 
-    function rebuild(x)  #rebuild the approximation from the little blocks
+    function rebuild(x)  # Rebuild the approximation from the little blocks
         A = zeros(l)
         B = zeros(l)
         A[1] = P[1]
@@ -111,7 +123,7 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
             B[i+1] = B[i]*(P[i+1] -P[i-1]) + B[i-1]*(x-X[i])
         end
         if isinf(abs(A[l])) == true || isinf(abs(B[l])) == true || isnan(abs(A[l])) == true || isnan(abs(B[l])) ==true
-            throw(Error) #not sure what to do when this happens yet, problems occur when N exceeds 336
+            throw(Error) # Not sure what to do when this happens yet, problems occur when N exceeds 336
         else
             return A[l]/B[l]
         end
@@ -128,12 +140,12 @@ function Pade(x, y; N = 500, xl = 0.0, xr = xmax, rebuild_with = [])
 end
 
 
-################################################### Convexity test
+#################### Convexity test ###################
 
 function convexity_test(x,y, display_plot = false)
     local xl = 0
     local i = 1
-    while i < length(x) #while loop to easily skip iteration once we've found a point of non-convexity (impossible with range statement)
+    while i < length(x) # While loop to easily skip iteration once we've found a point of non-convexity (impossible with range statement)
         for j in range(i+2, length(x))
             for k in range(i+1,j-1)
                 p1 = (x[i], y[i])
@@ -146,13 +158,13 @@ function convexity_test(x,y, display_plot = false)
                     small_x = [i for i in range(p1[1], p3[1],10)]
                     small_y = [(slope*i + intercept) for i in small_x]
                     plt = plot(px,py, ylim=(ymin,ymax), legend = false)
-                    #plot!(x,y, markershape = :circle, color = :black)
+                    # plot!(x,y, markershape = :circle, color = :black)
                     plot!(small_x, small_y)
                     plot!([p1[1]], [p1[2]], markershape = :circle, color = :green)
                     plot!([p3[1]], [p3[2]], markershape = :circle, color = :blue)
                     plot!([p2[1]], [p2[2]], markershape = :circle, color = :red)
-                    display(plt)#necessary to display the graph (equivalent to plt.show() in python)
-                    #sleep(0.1)  #delay to allow for the graph to display
+                    display(plt) # Necessary to display the graph (equivalent to plt.show() in python)
+                    # sleep(0.1)  #delay to allow for the graph to display
                 end
                 if Y > p2[2]
                     println("sampled point  ",p2[2])
@@ -168,9 +180,8 @@ function convexity_test(x,y, display_plot = false)
     return xl
 end
 
-################################################### First test that needs to be done
-#this test samples the function initially to determine where is the
-#region in which the function is definitly above zero
+#################### First test that needs to be done ####################
+# This test samples the function initially to determine where is the region in which the function is definitly above zero
 
 function first_sampling(x_start)
     xs = Any[x_start]
@@ -178,31 +189,31 @@ function first_sampling(x_start)
     xr = x_start
     local xl = 0
     xn = x_start/2
-    #check if our starting point gives us a value above 0
-    ###### Need completing #####
+    # Check if our starting point gives us a value above 0
+    ###### Needs completing #####
     if ys[end] <= 0
         while ys[end] <=0
             x_start = 2*x_start
             push!(xs, x_start)
             push!(ys, f(x_start))
         end
-    else #if our starting point was adequate, samples from right to left
+    else # If our starting point was adequate, samples from right to left
         while ys[1] > 0
             insert!(xs,1,xn)
             insert!(ys,1,f(xn))
             xn = xn/2
         end
     end
-    #one last check to see if it's still above zero later on
+    # One last check to see if it's still above zero later on
     x_start = 1.5*x_start
     push!(xs, x_start)
     push!(ys, f(x_start))
     if ys[end]<0
         println("Need to check this scenario")
     end
-    #check how many points we already have sampled to determine 
-    #how much more sampling needs to be done 
-    #(we're going to do one sampling in between every already sampled points)
+    # Check how many points we already have sampled to determine 
+    # How much more sampling needs to be done 
+    # (we're going to do one sampling in between every already sampled points)
     xns = Any[]
     for i in range(1, length(xs)-1)
         push!(xns, (xs[i+1]+xs[i])/2)
@@ -215,12 +226,12 @@ function first_sampling(x_start)
             end
         end
     end
-    #add a random point for test purposes (for the above test)
+    # Add a random point for test purposes (for the above test)
     # insert!(xs,3, 90)
     # insert!(ys,3,40)
     # insert!(xs,4, 95)
     # insert!(ys,4,70)
-    #Use the padé to see if peaks are predicted in the area that is supposed to be convexity
+     #Use the padé to see if peaks are predicted in the area that is supposed to be convexity
     x_pade, y_pade = Pade(xs,ys)
     peaks = peak_finder(x_pade, y_pade)
 
@@ -233,14 +244,14 @@ function first_sampling(x_start)
     # println(peaks)
     # println(convexs2)
 
-    #determine which region is above the x axis
+    # Determine which region is above the x axis
     above_region = xs
     for i in range(1,length(xs))
         if ys[i] < 0
             above_region = xs[i:end]
         end
     end
-    #check if there is a predicted peak wihtin the "above" sampled region
+    # Check if there is a predicted peak wihtin the "above" sampled region
     if isempty(peaks) == false
         for i in range(1, length(peaks))
             if peaks[i] > above_region[1] && peaks[i] < above_region[end]
@@ -248,7 +259,7 @@ function first_sampling(x_start)
             end
         end
     end
-    #Determines the right and left bound in which more sampling might be needed
+    # Determines the right and left bound in which more sampling might be needed
     xr = above_region[2]
     for i in range(1,length(xs))
         if ys[i] < 0
@@ -290,18 +301,18 @@ function pade_stop_criteria(xl,big_x_sampled,big_y_sampled,errors)
         pade_x2, pade_y2 = Pade(big_x_sampled[end-1],big_y_sampled[end-1],N=N,xl=xl)
         # println(pade_x1)
         # println(pade_x2)
-        #calculate error between the two Padé's in between a relevant x range
+        # Calculate error between the two Padé's in between a relevant x range
         error = 0
         for i in range(1,length(pade_x1))
             error += abs(pade_y2[i] - pade_y1[i])/N
         end
         push!(errors, error)
-        #Critera to see by how much the error shrunk from one iteration to the next
+        # Critera to see by how much the error shrunk from one iteration to the next
         if length(errors)>1
             ratio = errors[end-1]/errors[end]
             print("ratio ", ratio, "\n")
             push!(ratios, ratio)
-            #checks if the error is diminishing with each extra sampling (needs to diminish twice in a row)
+            # Checks if the error is diminishing with each extra sampling (needs to diminish twice in a row)
             if length(ratios)>2
                 if ratios[end]<ratios[end-1] && ratios[end-1] < ratios[end-2]
                     stop_crit = true
@@ -316,23 +327,8 @@ function pade_stop_criteria(xl,big_x_sampled,big_y_sampled,errors)
 end
 
 
+#################### Bissection root finding ####################
 
-
-
-
-################################################## Padé informed sampling
-
-# function pade_sampling(xs,ys, display_plot = false )
-
-
-
-
-# end
-
-
-###################################################### Bissection root finding
-############################### 
-###############################
 #TO DO : ______________
 #Could be rewritten better, modified it to work with the Padé approx
 ################################
@@ -370,7 +366,7 @@ end
 ######################################################
 #LETS LOOP THESE TESTS !
 
-#Doing
+# Doing
 # - Modify the bissection method algorithm to work with the sampled points ✓
 #   instead of the function. ✓
 # - Add a Padé/or/modify function for rebuilding the Padé from various inputs once the 
@@ -380,28 +376,28 @@ end
 # - Add convexity check to first_test ... but need to fix convexity check first, it'S
 #   still broken ... :(
 
-#To do
-#1)Implement a Padé test that once a lot of points have been sampled, we take a padé approx
+# To do
+# 1)Implement a Padé test that once a lot of points have been sampled, we take a padé approx
 #  of our sampled points, then take one more point and build another padé approx).
 #  If the difference between the padé isn't big, it means that we don't really needed
 #  to sample anymore. This is the stopping criteria. The padé needs to be evaluated only
 #  near the zero to avoid disturbance of sampling near the peaks (which could modify the padé greatly)
-#2)Create a Padé test
-#2.1)Create a Padé test that informs sampling (if a peak is guessed, sample there)
-#3)Test peak_finder on the padé approximate that's been built (how good is it at finding where the peak is)
-#4)Add convexity check to First_test.
-#4.1)Investigate why the convexity check breaks with the padé approx in first_test
-#5)Build a routine that utilizes all the tests to make the full algorithm
-#6)Test with more matrices
-#7)Write and read from file
-#8)Make Montecarlo simulation that outputs the success rate, and the systems on which the 
+# 2)Create a Padé test
+# 2.1)Create a Padé test that informs sampling (if a peak is guessed, sample there)
+# 3)Test peak_finder on the padé approximate that's been built (how good is it at finding where the peak is)
+# 4)Add convexity check to First_test.
+# 4.1)Investigate why the convexity check breaks with the padé approx in first_test
+# 5)Build a routine that utilizes all the tests to make the full algorithm
+# 6)Test with more matrices
+# 7)Write and read from file
+# 8)Make Montecarlo simulation that outputs the success rate, and the systems on which the 
 #  test failed
-#8.1)Make an algorithm that finds the first zero for sure everytime 
+# 8.1)Make an algorithm that finds the first zero for sure everytime 
 #    (not efficient with uniform sampling with right to left search)
 
 
 xl = 0
-xr = 2000 #the search is gonna start here
+xr = 2000 # The search is gonna start here
 xs, ys , xl, xr = first_sampling(xr)
 x_sampled = xs
 y_sampled = ys
@@ -459,7 +455,7 @@ function root_solve(x_sampled,y_sampled,compt,display_plot = false)
         end
         print("xn ", xn, "\n")
         print("x_sampled ", x_sampled, "\n")
-        #checks if this sampling has changed something about our evaluation
+        # Checks if this sampling has changed something about our evaluation
         push!(big_x_sampled,x_sampled[index:end])
         push!(big_y_sampled,y_sampled[index:end])
         errors,stop_crit = pade_stop_criteria(xn,big_x_sampled,big_y_sampled,errors)
@@ -469,7 +465,7 @@ function root_solve(x_sampled,y_sampled,compt,display_plot = false)
         if stop_crit == false
             break
         end
-        #plots the different padés (if needed)
+        # Plots the different padés (if needed)
         if display_plot==true
             for i in range(1,length(big_x_sampled))
                 local pade_x, pade_y
