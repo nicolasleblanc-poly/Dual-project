@@ -1,3 +1,10 @@
+"""
+This module is the main file that is run to test the Padé, 
+Ritz and harmonic Ritz duality checker algorithm.
+
+Author: Nicolas Leblanc
+"""
+
 module Pade_Ritz_HarmonicRitz_matrix
 using LinearAlgebra,Random, Base.Threads,Plots,
     .Restart_Ritz_jacobiDavidson,
